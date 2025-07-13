@@ -15,12 +15,16 @@ local function create_calculator_button(player)
         tooltip = {"gui.open-calculator-button-tooltip"} -- Optional tooltip
     }
 
-    -- Removed: button.player_index = player.index
+    button.style.minimal_width = 170
+    button.style.maximal_width = 170
+    button.style.minimal_height = 35
+    button.style.maximal_height = 35
 end
 
 -- This function is called when the mod is loaded and the game starts or a save is loaded.
-script.on_init(function()
-    game.print("Factorio Resource Calculator: Mod initialized!")
+script.on_init(function()   
+    if not global then global = {} end
+    global.calculator_recipies_filter_enabled = {}
     -- Create the GUI button for all existing players
     for _, player in pairs(game.players) do
         create_calculator_button(player)
@@ -31,11 +35,38 @@ end)
 script.on_event(defines.events.on_player_joined_game, function(event)
     local player = game.get_player(event.player_index)
     if player then
-        player.print({"gui.welcome-message", player.name}) -- Example of using localized string
         create_calculator_button(player)
+        global.calculator_recipies_filter_enabled[player.index] = true
     end
 end)
 
+-- Function to add a draggable titlebar to the GUI frame
+function add_titlebar(gui, caption, close_button_name)
+  local titlebar = gui.add{type = "flow"}
+  titlebar.drag_target = gui
+  titlebar.add{
+    type = "label",
+    style = "frame_title",
+    caption = caption,
+    ignored_by_interaction = true,
+  }
+  local filler = titlebar.add{
+    type = "empty-widget",
+    style = "draggable_space",
+    ignored_by_interaction = true,
+  }
+  filler.style.height = 24
+  filler.style.horizontally_stretchable = true
+  titlebar.add{
+    type = "sprite-button",
+    name = close_button_name,
+    style = "frame_action_button",
+    sprite = "utility/close",
+    hovered_sprite = "utility/close_black",
+    clicked_sprite = "utility/close_black",
+    tooltip = {"gui.close-instruction"},
+  }
+end
 
 -- Function to open the calculator GUI window
 local function open_calculator_gui(player)
@@ -43,6 +74,11 @@ local function open_calculator_gui(player)
     local frame_name = "resource_calculator_frame"
     if gui[frame_name] then
         gui[frame_name].destroy() -- Remove existing frame if present
+    end
+
+    -- Ensure the global filter variable exists
+    if global.calculator_recipies_filter_enabled[player.index] == nil then
+        global.calculator_recipies_filter_enabled[player.index] = true
     end
 
     -- Create a new frame for the calculator GUI
@@ -57,92 +93,96 @@ local function open_calculator_gui(player)
     frame.style.maximal_height = 280
     frame.auto_center = true
 
-    -- Custom titlebar (vanilla style)
-    local titlebar = frame.add{
-        type = "flow",
-        name = "resource_calculator_titlebar",
-        direction = "horizontal"
-    }
-    titlebar.style.horizontally_stretchable = true
-    titlebar.style.vertically_stretchable = false
-    titlebar.style.vertical_align = "center"
-    titlebar.style.height = 30
-
-    -- Title label
-    local title_label = titlebar.add{
-        type = "label",
-        name = "resource_calculator_title",
-        caption = {"gui.calculator-frame-title"},
-        style = "frame_title",
-        ignored_by_interaction = true
-    }
-
-    -- Drag handle
-    local drag_handle = titlebar.add{
-        type = "empty-widget",
-        name = "resource_calculator_drag_handle",
-        style = "draggable_space_header",
-        ignored_by_interaction = false
-    }
-    drag_handle.style.horizontally_stretchable = true
-    drag_handle.style.height = 24
-
-    -- Close button
-    local close_btn = titlebar.add{
-        type = "sprite-button",
-        name = "resource_calculator_close_button",
-        sprite = "utility/close",
-        style = "frame_action_button",
-        tooltip = {"gui.close"}
-    }
-    close_btn.style.horizontally_stretchable = false
-    close_btn.style.height = 24
-    close_btn.style.width = 24
-
-    frame.drag_target = drag_handle
+    -- Add a titlebar to the frame
+    add_titlebar(frame, {"gui.calculator-frame-title"}, "resource_calculator_close_button")
 
     -- Content flow below titlebar
     local content_flow = frame.add{
         type = "flow",
         direction = "vertical"
     }
-    content_flow.add{ type = "choose-elem-button", name = "resource_calculator_item_picker", elem_type = "item" }
-    content_flow.add{ type = "textfield", name = "resource_calculator_number_input", text = "1", numeric = true, allow_decimal = true, allow_negative = false }
-    content_flow.add{ type = "button", name = "resource_calculator_confirm_button", caption = {"gui.calculator-confirm-button"} }
-end
+    content_flow.style.vertical_spacing = 12
 
--- Handle the click event for the calculator button
-script.on_event(defines.events.on_gui_click, function(event)
-    local element = event.element
-    if element and element.name == "resource_calculator_button" then
-        local player = game.get_player(event.player_index)
-        if player then
-            open_calculator_gui(player)
-        end
-    elseif element and element.name == "resource_calculator_confirm_button" then
-        local player = game.get_player(event.player_index)
-        if player then
-            -- Find the frame in gui.screen
-            local frame = player.gui.screen.resource_calculator_frame
-            if frame then
-                local item_picker = frame.resource_calculator_item_picker or frame.children[2].resource_calculator_item_picker
-                local number_input = frame.resource_calculator_number_input or frame.children[2].resource_calculator_number_input
-                local item = item_picker and item_picker.elem_value or nil
-                local amount = number_input and tonumber(number_input.text) or 1
-                if item and amount then
-                    player.print("You selected: " .. item .. " x " .. amount)
-                    -- Here you would call your calculation logic
-                else
-                    player.print("Please select an item and enter a valid number.")
+    -- Add a label for the item picker
+    content_flow.add{
+        type = "label",
+        caption = {"gui.calculator-item-picker-label"},
+        style = "caption_label"
+    }
+
+    -- Add horizontal flow for item picker and number input
+    local item_picker_flow = content_flow.add{
+        type = "flow",
+        direction = "horizontal",
+        style = "horizontal_flow",
+    }
+    item_picker_flow.style.horizontal_spacing = 8 -- Adjust spacing between elements
+    item_picker_flow.style.vertical_align = "center" -- Center vertically within the flow
+
+    -- Create a filter for the item picker
+    local filters = {}
+    
+    if global.calculator_recipies_filter_enabled[player.index] then
+        for name, recipe in pairs(player.force.recipes) do
+            if recipe.enabled then
+                local result = recipe.products[1]
+                if result and result.type == "item" then
+                    table.insert(filters, {filter = "name", name = result.name})
                 end
             end
         end
-    elseif element and element.name == "resource_calculator_close_button" then
+    end
+
+    -- Add an item picker
+    item_picker_flow.add{ 
+        type = "choose-elem-button", 
+        name = "resource_calculator_item_picker", 
+        caption = {"gui.calculator-item-picker-placeholder"},
+        elem_type = "item",
+        elem_filters = filters
+    }
+    -- Add a number input
+    local number_input = item_picker_flow.add{ 
+        type = "textfield", 
+        name = "resource_calculator_number_input", 
+        text = "1", 
+        numeric = true, 
+        allow_decimal = true, 
+        allow_negative = false,
+    }
+    number_input.style.minimal_width = 40
+    number_input.style.maximal_width = 40
+    -- Add a label for the number input
+    item_picker_flow.add{ 
+        type = "label", 
+        caption = "/s",
+        style = "caption_label" 
+    }
+    -- Add a checkbox for additional options (optional)
+    content_flow.add{
+        type = "checkbox",
+        name = "exclude_undiscovered_recipes",
+        caption = {"gui.calculator-exclude-undiscovered-recipes-checkbox-label"},
+        state = global.calculator_recipies_filter_enabled[player.index]
+    }
+    -- Add a confirm button
+    content_flow.add{ 
+        type = "button", 
+        name = "resource_calculator_confirm_button", 
+        caption = {"gui.calculator-confirm-button"} 
+    }
+end
+
+-- Handle checkbox state change to update filters_enabled per player
+script.on_event(defines.events.on_gui_checked_state_changed, function(event)
+    local element = event.element
+    if element and element.name == "exclude_undiscovered_recipes" then
         local player = game.get_player(event.player_index)
         if player then
-            local frame = player.gui.screen.resource_calculator_frame
-            if frame then
-                frame.destroy()
+            local prev_state = global.calculator_recipies_filter_enabled[player.index]
+            if prev_state ~= element.state then
+                global.calculator_recipies_filter_enabled[player.index] = element.state
+                open_calculator_gui(player)
             end
         end
     end
@@ -164,17 +204,22 @@ script.on_event(defines.events.on_player_left_game, function(event)
     end
 end)
 
-local function get_all_recipes()
+-- Function to get all recipes in the game
+local function get_all_recipes(hidden)
     local recipes = {}
     for name, recipe_prototype in pairs(data.raw.recipe) do
-        -- Filter out hidden or non-craftable recipes if necessary
-        if not recipe_prototype.hidden and not recipe_prototype.hidden_from_player_crafting then
+        if hidden then
             recipes[name] = recipe_prototype
+        else
+            if not recipe_prototype.hidden and not recipe_prototype.hidden_from_player_crafting then
+                recipes[name] = recipe_prototype
+            end
         end
     end
     return recipes
 end
 
+-- Function to calculate resource requirements for a given item and production rate
 local function calculate_requirements(target_item_name, target_production_rate)
     local all_recipes = get_all_recipes()
     local all_items = data.raw.item -- Access all item prototypes

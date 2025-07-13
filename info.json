@@ -4,6 +4,6 @@
   "title": "Factorio Resource Calculator",
   "author": "PikkiKaju",
   "factorio_version": "2.0",
-  "dependencies": ["base >= 1.1", "flib >= 0.16.0"],
+  "dependencies": ["base >= 1.1"],
   "description": "A mod to help calculate resource and machine requirements for production."
 }

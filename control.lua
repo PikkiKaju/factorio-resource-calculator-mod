@@ -1,3 +1,30 @@
+-- Custom serialization function for recipe tables
+local function serialize_recipe_table(tbl, indent)
+    indent = indent or ""
+    local lines = {}
+    if type(tbl) ~= "table" then
+        return tostring(tbl)
+    end
+    -- Print 'name' key first if present
+    if tbl.name then
+        table.insert(lines, indent .. "name: " .. tostring(tbl.name))
+    end
+    -- Print other keys except 'ingredients' and 'name'
+    for k, v in pairs(tbl) do
+        if k ~= "name" and k ~= "ingredients" then
+            table.insert(lines, indent .. tostring(k) .. ": " .. tostring(v))
+        end
+    end
+    -- Print ingredients recursively
+    if tbl.ingredients and type(tbl.ingredients) == "table" and #tbl.ingredients > 0 then
+        table.insert(lines, indent .. "ingredients:")
+        for _, ingredient in ipairs(tbl.ingredients) do
+            table.insert(lines, serialize_recipe_table(ingredient, indent .. "  "))
+        end
+    end
+    return table.concat(lines, "\n")
+end
+
 -- Function to create the calculator button in the top-right GUI
 local function create_calculator_button(player)
     local gui = player.gui.top
@@ -30,6 +57,17 @@ script.on_init(function()
         create_calculator_button(player)
     end
 end)
+
+-- Function to get all recipes available to the player
+local function get_available_recipes(player)
+    local recipes = {}
+    for name, recipe in pairs(player.force.recipes) do
+        if recipe.enabled then
+            recipes[name] = recipe
+        end
+    end
+    return recipes
+end
 
 -- This function is called when a player joins the game.
 script.on_event(defines.events.on_player_joined_game, function(event)
@@ -201,6 +239,120 @@ script.on_event("custom-input-resource-calculator-open", function(event)
     end
 end)
 
+-- Function to calculate resource requirements for a given item and production rate
+local function calculate_requirements(target_item_name, target_production_rate)
+    local recipe = prototypes.recipe[target_item_name]
+    local recipe_table = {}
+    local ingredients_table = {}
+    local player = game.players[1] 
+
+
+    if recipe == nil then
+        local item = prototypes.item[target_item_name]
+        local final_item_table = {
+            name = item.name,
+            amount = target_production_rate
+            
+        }
+        player.print("-------- Item Table --------")
+        player.print(serpent.block(final_item_table))
+        player.print("-------- End of item Table --------")
+        return final_item_table
+    end
+    target_production_rate = recipe.main_product.amount/target_production_rate
+    for _, ingredient in pairs(recipe.ingredients) do
+        table.insert(ingredients_table, calculate_requirements(
+            ingredient.name, 
+            ingredient.amount * target_production_rate, 
+            recipes_table
+        ))
+    end
+    recipe_table = {
+        name = target_item_name,
+        amount = target_production_rate,
+        energy = recipe.energy,
+        ingredients = ingredients_table
+    }
+    player.print("-------- Recipe Table --------")
+    player.print(serpent.block(recipe_table))
+    player.print("-------- End of Recipe Table --------")
+
+    return recipe_table
+    -- This is where the core calculation logic goes.
+    -- It would involve:
+    -- 1. Finding the recipe(s) for the target_item_name.
+    -- 2. Recursively traversing the ingredient dependencies for that recipe.
+    -- 3. Summing up raw resource requirements.
+    -- 4. Calculating machine counts based on crafting speed of assemblers and recipe crafting time.
+    -- This is a complex algorithm (often using graph traversal or a bill-of-materials approach).
+
+    -- Example: Just print a few recipe names
+    -- for name, recipe in pairs(all_recipes) do
+    --     game.print("Recipe: " .. name)
+    -- end
+end
+
+-- Handle the click event for the calculator button
+script.on_event(defines.events.on_gui_click, function(event)
+    local element = event.element
+    -- If the clicked element is the calculator button, open the GUI
+    if element and element.name == "resource_calculator_button" then
+        local player = game.get_player(event.player_index)
+        if player then
+            open_calculator_gui(player)
+        end
+    -- If the clicked element is the confirm button, process the input
+    elseif element and element.name == "resource_calculator_confirm_button" then
+        local player = game.get_player(event.player_index)
+        if player then
+            -- Find the frame in gui.screen
+            local frame = player.gui.screen.resource_calculator_frame
+            if frame then
+                local item_picker = frame.children[2].children[2].resource_calculator_item_picker
+                local number_input = frame.children[2].children[2].resource_calculator_number_input
+                local item = item_picker and item_picker.elem_value or nil
+                local amount = number_input and tonumber(number_input.text) or 1
+                
+                if prototypes == nil then
+                    player.print("'prototypes' object not available.")
+                    return
+                end
+
+                player.print("Calculating for: " .. item .. " at " .. amount .. " / second")
+
+                if item ~= nil and amount ~= nil then
+                    local recipe_results = calculate_requirements(item, amount)
+                    -- Remove previous result label if present
+                    local result_label_name = "resource_calculator_result_label"
+                    local content_flow = frame.children[2]
+                    for _, child in pairs(content_flow.children) do
+                        if child.name == result_label_name then
+                            child.destroy()
+                        end
+                    end
+                    -- Add new result label
+                    content_flow.add{
+                        type = "label",
+                        name = result_label_name,
+                        caption = serialize_recipe_table(recipe_results, "  "),
+                        style = "caption_label"
+                    }
+                else
+                    player.print("Please select an item and enter a valid number.")
+                end
+            end
+        end
+    -- If the clicked element is the close button, close the GUI
+    elseif element and element.name == "resource_calculator_close_button" then
+        local player = game.get_player(event.player_index)
+        if player then
+            local frame = player.gui.screen.resource_calculator_frame
+            if frame then
+                frame.destroy()
+            end
+        end
+    end
+end)
 
 -- This function is called when a player leaves the game (useful for cleaning up player-specific GUI elements)
 script.on_event(defines.events.on_player_left_game, function(event)
@@ -217,51 +369,3 @@ script.on_event(defines.events.on_player_left_game, function(event)
         end
     end
 end)
-
--- Function to get all recipes in the game
-local function get_all_recipes(hidden)
-    local recipes = {}
-    for name, recipe_prototype in pairs(data.raw.recipe) do
-        if hidden then
-            recipes[name] = recipe_prototype
-        else
-            if not recipe_prototype.hidden and not recipe_prototype.hidden_from_player_crafting then
-                recipes[name] = recipe_prototype
-            end
-        end
-    end
-    return recipes
-end
-
--- Function to calculate resource requirements for a given item and production rate
-local function calculate_requirements(target_item_name, target_production_rate)
-    local all_recipes = get_all_recipes()
-    local all_items = data.raw.item -- Access all item prototypes
-    local all_fluids = data.raw.fluid -- Access all fluid prototypes
-    local all_assemblers = data.raw["assembling-machine"] -- Access all assembling machine prototypes
-
-    -- This is where the core calculation logic goes.
-    -- It would involve:
-    -- 1. Finding the recipe(s) for the target_item_name.
-    -- 2. Recursively traversing the ingredient dependencies for that recipe.
-    -- 3. Summing up raw resource requirements.
-    -- 4. Calculating machine counts based on crafting speed of assemblers and recipe crafting time.
-    -- This is a complex algorithm (often using graph traversal or a bill-of-materials approach).
-
-    game.print("Calculating for: " .. target_item_name .. " at " .. target_production_rate .. " / second")
-
-    -- Example: Just print a few recipe names
-    -- for name, recipe in pairs(all_recipes) do
-    --     game.print("Recipe: " .. name)
-    -- end
-
-    -- Return calculated results (e.g., a table of raw resources and machine counts)
-    return {
-        raw_materials = {},
-        machines = {}
-    }
-end
-
--- Example of calling the calculation (e.g., from your GUI handler)
--- local results = calculate_requirements("electronic-circuit", 10)
--- game.print(serpent.block(results)) -- Use serpent.block for pretty printing tables (requires serpent library)

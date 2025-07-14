@@ -188,6 +188,20 @@ script.on_event(defines.events.on_gui_checked_state_changed, function(event)
     end
 end)
 
+-- Handle custom input to open calculator window (Ctrl+C)
+script.on_event("custom-input-resource-calculator-open", function(event)
+    local player = game.get_player(event.player_index)
+    if player then
+        local frame = player.gui.screen.resource_calculator_frame
+        if frame then
+            frame.destroy()
+        else
+            open_calculator_gui(player)
+        end
+    end
+end)
+
+
 -- This function is called when a player leaves the game (useful for cleaning up player-specific GUI elements)
 script.on_event(defines.events.on_player_left_game, function(event)
     local player = game.get_player(event.player_index)

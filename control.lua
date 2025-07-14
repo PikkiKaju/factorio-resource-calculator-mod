@@ -29,23 +29,7 @@ local function add_recipe_tree_to_gui(parent, recipe_table, indent_level, is_las
             style = "caption_label"
         }
     end
-    -- Show icon if possible
-    local sprite_name = recipe_table.name or ""
-    local sprite_path = nil
-    if sprite_name ~= "" then
-        if prototypes and prototypes.fluid and prototypes.fluid[sprite_name] then
-            sprite_path = "fluid/" .. sprite_name
-        elseif prototypes and prototypes.item and prototypes.item[sprite_name] then
-            sprite_path = "item/" .. sprite_name
-        end
-        if sprite_path then
-            flow.add{
-                type = "sprite",
-                sprite = sprite_path,
-                resize_to_sprite = false
-            }
-        end
-    end
+    -- ...sprites removed...
     -- Show main item info, replace '-' with ' '
     local item_name = recipe_table.name and string.gsub(recipe_table.name, "-", " ") or "?"
     local label_text = item_name
@@ -463,18 +447,7 @@ script.on_event(defines.events.on_gui_click, function(event)
                             caption = branch,
                             style = "caption_label"
                         }
-                        -- Show icon if possible
-                        local sprite_path = "item/" .. k
-                        if prototypes.fluid and prototypes.fluid[k] then
-                            sprite_path = "fluid/" .. k
-                        end
-                        if (prototypes.item and prototypes.item[k]) or (prototypes.fluid and prototypes.fluid[k]) then
-                            sum_item_flow.add{
-                                type = "sprite",
-                                sprite = sprite_path,
-                                resize_to_sprite = false
-                            }
-                        end
+                        -- ...sprites removed...
                         sum_item_flow.add{
                             type = "label",
                             caption = string.gsub(k, "-", " ") .. ": ",

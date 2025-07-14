@@ -1,3 +1,49 @@
+-- Recursively add a graphical tree of recipe results to the GUI
+local function add_recipe_tree_to_gui(parent, recipe_table, indent_level, is_last)
+    indent_level = indent_level or 0
+    is_last = is_last or false
+    local flow = parent.add{
+        type = "flow",
+        direction = "horizontal"
+    }
+    -- Indent visually using labels to mimic tree branches
+    local branch = ""
+    for i = 1, indent_level do
+        branch = branch .. (i == indent_level and (is_last and "└" or "├") or "│") .. "   "
+    end
+    if branch ~= "" then
+        flow.add{
+            type = "label",
+            caption = branch,
+            style = "caption_label"
+        }
+    end
+    -- Show main item info, replace '-' with ' '
+    local item_name = recipe_table.name and string.gsub(recipe_table.name, "-", " ") or "?"
+    local label_text = item_name
+    if recipe_table.item_amount_per_second then
+        label_text = label_text .. " (" .. tostring(recipe_table.item_amount_per_second) .. "/s)"
+    end
+    flow.add{
+        type = "label",
+        caption = label_text,
+        style = "caption_label"
+    }
+    -- Show machine count if present
+    if recipe_table.machines_amount then
+        flow.add{
+            type = "label",
+            caption = " | Machines: " .. string.format("%.2f", recipe_table.machines_amount),
+            style = "caption_label"
+        }
+    end
+    -- Recursively add ingredients as branches
+    if recipe_table.ingredients and #recipe_table.ingredients > 0 then
+        for i, ingredient in ipairs(recipe_table.ingredients) do
+            add_recipe_tree_to_gui(parent, ingredient, indent_level + 1, i == #recipe_table.ingredients)
+        end
+    end
+end
 -- Custom serialization function for recipe tables
 local function serialize_recipe_table(tbl, indent)
     indent = indent or ""
@@ -58,17 +104,6 @@ script.on_init(function()
     end
 end)
 
--- Function to get all recipes available to the player
-local function get_available_recipes(player)
-    local recipes = {}
-    for name, recipe in pairs(player.force.recipes) do
-        if recipe.enabled then
-            recipes[name] = recipe
-        end
-    end
-    return recipes
-end
-
 -- This function is called when a player joins the game.
 script.on_event(defines.events.on_player_joined_game, function(event)
     local player = game.get_player(event.player_index)
@@ -106,6 +141,16 @@ function add_titlebar(gui, caption, close_button_name)
   }
 end
 
+local style = {}
+style.calculator_window_dimensions = {
+    width = 800,
+    height = 600
+}
+style.calculator_window_tree_dimensions = {
+    width = style.calculator_window_dimensions.width - 30,
+    height = style.calculator_window_dimensions.height - 200
+}
+
 -- Function to open the calculator GUI window
 local function open_calculator_gui(player)
     local gui = player.gui.screen
@@ -125,10 +170,10 @@ local function open_calculator_gui(player)
         name = frame_name,
         direction = "vertical"
     }
-    frame.style.minimal_width = 450
-    frame.style.maximal_width = 450
-    frame.style.minimal_height = 280
-    frame.style.maximal_height = 280
+    frame.style.minimal_width = style.calculator_window_dimensions.width
+    frame.style.maximal_width = style.calculator_window_dimensions.width
+    frame.style.minimal_height = style.calculator_window_dimensions.height
+    frame.style.maximal_height = style.calculator_window_dimensions.height
     frame.auto_center = true
 
     -- Add a titlebar to the frame
@@ -140,7 +185,9 @@ local function open_calculator_gui(player)
         direction = "vertical"
     }
     content_flow.style.vertical_spacing = 12
-
+    content_flow.style.maximal_height = 420
+    content_flow.style.minimal_height = 420
+    
     -- Add a label for the item picker
     content_flow.add{
         type = "label",
@@ -330,10 +377,9 @@ script.on_event(defines.events.on_gui_click, function(event)
                     player.print("'prototypes' object not available.")
                     return
                 end
-
-                player.print("Calculating for: " .. item .. " at " .. amount .. " / second")
-
+                
                 if item ~= nil and amount ~= nil then
+                    player.print("Calculating for: " .. item .. " at " .. amount .. " / second")
                     local recipe_results = calculate_requirements(item, amount, 1)
                     local result_label_name = "resource_calculator_result_label"
                     local sum_result_label_name = "resource_calculator_sum_result_label"
@@ -344,21 +390,28 @@ script.on_event(defines.events.on_gui_click, function(event)
                             sum_requirements(ingredient, sum_ingredients_table)
                         end
                     end
-                    -- Remove previous result labels if present
+                    -- Remove previous result labels/tree if present
                     local content_flow = frame.children[2]
+                    
                     for _, child in pairs(content_flow.children) do
-                        if child.name == result_label_name or child.name == sum_result_label_name then
+                        if child.name == result_label_name or child.name == sum_result_label_name or child.name == "resource_calculator_result_tree" then
                             child.destroy()
                         end
                     end
-                    -- Add new result label
-                    content_flow.add{
-                        type = "label",
-                        name = result_label_name,
-                        caption = serialize_recipe_table(recipe_results, "  "),
-                        style = "caption_label"
+                    -- Add graphical tree for recipe results
+                    local tree_flow = content_flow.add{
+                        type = "scroll-pane",
+                        name = "resource_calculator_result_tree",
+                        direction = "vertical"
                     }
-                    content_flow.add{
+                    tree_flow.style.minimal_height = style.calculator_window_tree_dimensions.height 
+                    tree_flow.style.maximal_height = style.calculator_window_tree_dimensions.height
+                    tree_flow.style.minimal_width = style.calculator_window_tree_dimensions.width
+                    tree_flow.style.maximal_width = style.calculator_window_tree_dimensions.width
+                    tree_flow.vertical_scroll_policy = "auto"
+                    add_recipe_tree_to_gui(tree_flow, recipe_results, 0, true)
+                    -- Add summed requirements as text below
+                    tree_flow.add{
                         type = "label",
                         name = sum_result_label_name,
                         caption = serialize_recipe_table(sum_ingredients_table, "  "),

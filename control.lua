@@ -30,14 +30,13 @@ local function add_recipe_tree_to_gui(parent, recipe_table, indent_level, is_las
         }
     end
     -- Show icon if possible
-    local sprite_type = recipe_table.type or "item"
     local sprite_name = recipe_table.name or ""
     local sprite_path = nil
     if sprite_name ~= "" then
-        if sprite_type == "item" then
-            sprite_path = "item/" .. sprite_name
-        elseif sprite_type == "fluid" then
+        if prototypes and prototypes.fluid and prototypes.fluid[sprite_name] then
             sprite_path = "fluid/" .. sprite_name
+        elseif prototypes and prototypes.item and prototypes.item[sprite_name] then
+            sprite_path = "item/" .. sprite_name
         end
         if sprite_path then
             flow.add{
@@ -51,7 +50,7 @@ local function add_recipe_tree_to_gui(parent, recipe_table, indent_level, is_las
     local item_name = recipe_table.name and string.gsub(recipe_table.name, "-", " ") or "?"
     local label_text = item_name
     if recipe_table.item_amount_per_second then
-        label_text = label_text .. " (" .. tostring(recipe_table.item_amount_per_second) .. "/s)"
+        label_text = label_text .. " (" .. string.format("%.2f", recipe_table.item_amount_per_second) .. "/s)"
     end
     flow.add{
         type = "label",
@@ -483,7 +482,7 @@ script.on_event(defines.events.on_gui_click, function(event)
                         }
                         sum_item_flow.add{
                             type = "label",
-                            caption = " (" .. tostring(v) .. "/s)",
+                            caption = " (" .. string.format("%.2f", v) .. "/s)",
                             style = "caption_label"
                         }
                     end

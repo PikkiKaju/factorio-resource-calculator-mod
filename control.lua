@@ -44,32 +44,6 @@ local function add_recipe_tree_to_gui(parent, recipe_table, indent_level, is_las
         end
     end
 end
--- Custom serialization function for recipe tables
-local function serialize_recipe_table(tbl, indent)
-    indent = indent or ""
-    local lines = {}
-    if type(tbl) ~= "table" then
-        return tostring(tbl)
-    end
-    -- Print 'name' key first if present
-    if tbl.name then
-        table.insert(lines, indent .. "name: " .. tostring(tbl.name))
-    end
-    -- Print other keys except 'ingredients' and 'name'
-    for k, v in pairs(tbl) do
-        if k ~= "name" and k ~= "ingredients" then
-            table.insert(lines, indent .. tostring(k) .. ": " .. tostring(v))
-        end
-    end
-    -- Print ingredients recursively
-    if tbl.ingredients and type(tbl.ingredients) == "table" and #tbl.ingredients > 0 then
-        table.insert(lines, indent .. "ingredients:")
-        for _, ingredient in ipairs(tbl.ingredients) do
-            table.insert(lines, serialize_recipe_table(ingredient, indent .. "  "))
-        end
-    end
-    return table.concat(lines, "\n")
-end
 
 -- Function to create the calculator button in the top-right GUI
 local function create_calculator_button(player)
@@ -419,15 +393,40 @@ script.on_event(defines.events.on_gui_click, function(event)
                     tree_flow.style.maximal_height = style.calculator_window_tree_dimensions.height
                     tree_flow.style.minimal_width = style.calculator_window_tree_dimensions.width
                     tree_flow.style.maximal_width = style.calculator_window_tree_dimensions.width
-                    tree_flow.vertical_scroll_policy = "auto"
+                    tree_flow.vertical_scroll_policy = "dont-show-but-allow-scrolling"
+                    tree_flow.horizontal_scroll_policy = "never"
                     add_recipe_tree_to_gui(tree_flow, recipe_results, 0, true)
-                    -- Add summed requirements as text below
+                    
+                    -- Add summed requirements as a graphical tree below
                     tree_flow.add{
-                        type = "label",
+                        type = "line"
+                    }
+                    local sum_flow = tree_flow.add{
+                        type = "flow",
                         name = sum_result_label_name,
-                        caption = serialize_recipe_table(sum_ingredients_table, "  "),
+                        direction = "vertical"
+                    }
+                    sum_flow.add{
+                        type = "label",
+                        caption = "Summarized ingredients: ",
                         style = "caption_label"
                     }
+                    for k, v in pairs(sum_ingredients_table) do
+                        local sum_item_flow = sum_flow.add{
+                            type = "flow",
+                            direction = "horizontal"
+                        }
+                        sum_item_flow.add{
+                            type = "label",
+                            caption = "\t•\t" .. string.gsub(k, "-", " ") .. ": ",
+                            style = "caption_label"
+                        }
+                        sum_item_flow.add{
+                            type = "label",
+                            caption = " (" .. tostring(v) .. "/s)",
+                            style = "caption_label"
+                        }
+                    end
                 else
                     player.print("Please select an item and enter a valid number.")
                 end

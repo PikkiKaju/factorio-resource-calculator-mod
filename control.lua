@@ -1,15 +1,26 @@
 -- Recursively add a graphical tree of recipe results to the GUI
-local function add_recipe_tree_to_gui(parent, recipe_table, indent_level, is_last)
+local function add_recipe_tree_to_gui(parent, recipe_table, indent_level, is_last, pipes)
     indent_level = indent_level or 0
     is_last = is_last or false
+    pipes = pipes or {}
     local flow = parent.add{
         type = "flow",
         direction = "horizontal"
     }
     -- Indent visually using labels to mimic tree branches
     local branch = ""
-    for i = 1, indent_level do
-        branch = branch .. (i == indent_level and (is_last and "└" or "├") or "│") .. "   "
+    if indent_level > 0 then
+        for i = 1, indent_level do
+            if i == indent_level then
+                if recipe_table.ingredients and #recipe_table.ingredients > 0 then
+                    branch = branch .. (is_last and "└─┬ " or "├─┬ ")
+                else
+                    branch = branch .. (is_last and "└── " or "├── ")
+                end
+            else
+                branch = branch .. (pipes[i] and "│    " or "         ")
+            end
+        end
     end
     if branch ~= "" then
         flow.add{
@@ -17,6 +28,24 @@ local function add_recipe_tree_to_gui(parent, recipe_table, indent_level, is_las
             caption = branch,
             style = "caption_label"
         }
+    end
+    -- Show icon if possible
+    local sprite_type = recipe_table.type or "item"
+    local sprite_name = recipe_table.name or ""
+    local sprite_path = nil
+    if sprite_name ~= "" then
+        if sprite_type == "item" then
+            sprite_path = "item/" .. sprite_name
+        elseif sprite_type == "fluid" then
+            sprite_path = "fluid/" .. sprite_name
+        end
+        if sprite_path then
+            flow.add{
+                type = "sprite",
+                sprite = sprite_path,
+                resize_to_sprite = false
+            }
+        end
     end
     -- Show main item info, replace '-' with ' '
     local item_name = recipe_table.name and string.gsub(recipe_table.name, "-", " ") or "?"
@@ -40,7 +69,10 @@ local function add_recipe_tree_to_gui(parent, recipe_table, indent_level, is_las
     -- Recursively add ingredients as branches
     if recipe_table.ingredients and #recipe_table.ingredients > 0 then
         for i, ingredient in ipairs(recipe_table.ingredients) do
-            add_recipe_tree_to_gui(parent, ingredient, indent_level + 1, i == #recipe_table.ingredients)
+            local new_pipes = {}
+            for k, v in pairs(pipes) do new_pipes[k] = v end
+            new_pipes[indent_level + 1] = (i ~= #recipe_table.ingredients)
+            add_recipe_tree_to_gui(parent, ingredient, indent_level + 1, i == #recipe_table.ingredients, new_pipes)
         end
     end
 end
@@ -384,41 +416,69 @@ script.on_event(defines.events.on_gui_click, function(event)
                         end
                     end
                     -- Add graphical tree for recipe results
-                    local tree_flow = content_flow.add{
+                    local tree_scroll = content_flow.add{
                         type = "scroll-pane",
                         name = "resource_calculator_result_tree",
                         direction = "vertical"
                     }
-                    tree_flow.style.minimal_height = style.calculator_window_tree_dimensions.height 
-                    tree_flow.style.maximal_height = style.calculator_window_tree_dimensions.height
-                    tree_flow.style.minimal_width = style.calculator_window_tree_dimensions.width
-                    tree_flow.style.maximal_width = style.calculator_window_tree_dimensions.width
-                    tree_flow.vertical_scroll_policy = "dont-show-but-allow-scrolling"
-                    tree_flow.horizontal_scroll_policy = "never"
-                    add_recipe_tree_to_gui(tree_flow, recipe_results, 0, true)
-                    
+                    tree_scroll.style.minimal_height = style.calculator_window_tree_dimensions.height 
+                    tree_scroll.style.maximal_height = style.calculator_window_tree_dimensions.height
+                    tree_scroll.style.minimal_width = style.calculator_window_tree_dimensions.width
+                    tree_scroll.style.maximal_width = style.calculator_window_tree_dimensions.width
+                    tree_scroll.vertical_scroll_policy = "dont-show-but-allow-scrolling"
+                    tree_scroll.horizontal_scroll_policy = "never"
+                    -- Add a top-level label for clarity
+                    tree_scroll.add{
+                        type = "label",
+                        caption = "Recipe breakdown:",
+                        style = "caption_label"
+                    }
+                    add_recipe_tree_to_gui(tree_scroll, recipe_results, 0, true)
+
                     -- Add summed requirements as a graphical tree below
-                    tree_flow.add{
+                    tree_scroll.add{
                         type = "line"
                     }
-                    local sum_flow = tree_flow.add{
+                    local sum_flow = tree_scroll.add{
                         type = "flow",
                         name = sum_result_label_name,
                         direction = "vertical"
                     }
                     sum_flow.add{
                         type = "label",
-                        caption = "Summarized ingredients: ",
+                        caption = "Summarized ingredients:",
                         style = "caption_label"
                     }
-                    for k, v in pairs(sum_ingredients_table) do
+                    local sum_keys = {}
+                    for k, _ in pairs(sum_ingredients_table) do table.insert(sum_keys, k) end
+                    table.sort(sum_keys)
+                    for i, k in ipairs(sum_keys) do
+                        local v = sum_ingredients_table[k]
                         local sum_item_flow = sum_flow.add{
                             type = "flow",
                             direction = "horizontal"
                         }
+                        local branch = (i == #sum_keys and "└── " or "├── ")
                         sum_item_flow.add{
                             type = "label",
-                            caption = "\t•\t" .. string.gsub(k, "-", " ") .. ": ",
+                            caption = branch,
+                            style = "caption_label"
+                        }
+                        -- Show icon if possible
+                        local sprite_path = "item/" .. k
+                        if prototypes.fluid and prototypes.fluid[k] then
+                            sprite_path = "fluid/" .. k
+                        end
+                        if (prototypes.item and prototypes.item[k]) or (prototypes.fluid and prototypes.fluid[k]) then
+                            sum_item_flow.add{
+                                type = "sprite",
+                                sprite = sprite_path,
+                                resize_to_sprite = false
+                            }
+                        end
+                        sum_item_flow.add{
+                            type = "label",
+                            caption = string.gsub(k, "-", " ") .. ": ",
                             style = "caption_label"
                         }
                         sum_item_flow.add{

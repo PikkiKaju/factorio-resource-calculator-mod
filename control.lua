@@ -294,12 +294,24 @@ local function calculate_requirements(target_item_name, target_production_rate, 
     local player = game.players[1] 
 
     if recipe == nil then
-        local item = prototypes.item[target_item_name]
-        local final_item_table = {
-            name = item.name,
-            item_amount_per_second = target_production_rate
-        }
-        return final_item_table
+        local found_prototype = nil
+        local proto_types = {"item", "fluid", "tool", "ammo", "capsule", "armor", "gun", "module", "rail-planner", "repair-tool", "mining-tool", "item-with-entity-data", "item-with-inventory", "item-with-label", "item-with-tags", "item-with-entity-data"}
+        for _, proto_type in ipairs(proto_types) do
+            if prototypes[proto_type] and prototypes[proto_type][target_item_name] then
+                found_prototype = prototypes[proto_type][target_item_name]
+                break
+            end
+        end
+        if found_prototype then
+            local final_item_table = {
+                name = found_prototype.name,
+                type = found_prototype.type,
+                item_amount_per_second = target_production_rate
+            }
+            return final_item_table
+        else
+            return {name = target_item_name, item_amount_per_second = target_production_rate, type = "unknown"}
+        end
     end
 
     local default_production_rate_per_second = recipe.main_product.amount / recipe.energy
@@ -335,7 +347,6 @@ end
 function sum_requirements(recipe_results, sum_ingredients_table)
     local name = recipe_results.name
     local amount = recipe_results.item_amount_per_second
-    game.players[1].print("Summing up: " .. name .. " at " .. tostring(amount) .. " / second")
     if sum_ingredients_table[name] == nil then
         sum_ingredients_table[name] = amount
     else

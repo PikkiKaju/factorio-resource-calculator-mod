@@ -240,56 +240,69 @@ script.on_event("custom-input-resource-calculator-open", function(event)
 end)
 
 -- Function to calculate resource requirements for a given item and production rate
-local function calculate_requirements(target_item_name, target_production_rate)
+local function calculate_requirements(target_item_name, target_production_rate, machine_speed)
     local recipe = prototypes.recipe[target_item_name]
     local recipe_table = {}
     local ingredients_table = {}
     local player = game.players[1] 
 
-
     if recipe == nil then
         local item = prototypes.item[target_item_name]
         local final_item_table = {
             name = item.name,
-            amount = target_production_rate
-            
+            item_amount_per_second = target_production_rate
         }
-        player.print("-------- Item Table --------")
-        player.print(serpent.block(final_item_table))
-        player.print("-------- End of item Table --------")
         return final_item_table
     end
-    target_production_rate = recipe.main_product.amount/target_production_rate
+
+    local default_production_rate_per_second = recipe.main_product.amount / recipe.energy
+    local process_amount = target_production_rate / recipe.main_product.amount
+    local total_time = process_amount * recipe.energy 
+    local machines_amount = total_time * machine_speed
+    local adjusted_production_rate = target_production_rate / default_production_rate_per_second
+
     for _, ingredient in pairs(recipe.ingredients) do
         table.insert(ingredients_table, calculate_requirements(
             ingredient.name, 
-            ingredient.amount * target_production_rate, 
-            recipes_table
+            ingredient.amount * process_amount,
+            machine_speed
         ))
     end
     recipe_table = {
         name = target_item_name,
-        amount = target_production_rate,
+        item_amount_per_second = target_production_rate,
+        process_amount_per_second = process_amount,
+        machines_amount = machines_amount,
         energy = recipe.energy,
         ingredients = ingredients_table
     }
-    player.print("-------- Recipe Table --------")
-    player.print(serpent.block(recipe_table))
-    player.print("-------- End of Recipe Table --------")
 
     return recipe_table
     -- This is where the core calculation logic goes.
     -- It would involve:
-    -- 1. Finding the recipe(s) for the target_item_name.
-    -- 2. Recursively traversing the ingredient dependencies for that recipe.
     -- 3. Summing up raw resource requirements.
     -- 4. Calculating machine counts based on crafting speed of assemblers and recipe crafting time.
     -- This is a complex algorithm (often using graph traversal or a bill-of-materials approach).
+end
 
-    -- Example: Just print a few recipe names
-    -- for name, recipe in pairs(all_recipes) do
-    --     game.print("Recipe: " .. name)
-    -- end
+function sum_requirements(recipe_results, sum_ingredients_table)
+    local name = recipe_results.name
+    local amount = recipe_results.item_amount_per_second
+    game.players[1].print("Summing up: " .. name .. " at " .. tostring(amount) .. " / second")
+    if sum_ingredients_table[name] == nil then
+        sum_ingredients_table[name] = amount
+    else
+        local existing = sum_ingredients_table[name]
+        existing = existing + amount
+    end
+    if not recipe_results.ingredients then
+        return
+    end
+    
+    -- recursively traverse the recipe results and sum up the ingredients
+    for _, ingredient in pairs(recipe_results.ingredients) do
+        sum_requirements(ingredient, sum_ingredients_table)
+    end
 end
 
 -- Handle the click event for the calculator button
@@ -321,12 +334,20 @@ script.on_event(defines.events.on_gui_click, function(event)
                 player.print("Calculating for: " .. item .. " at " .. amount .. " / second")
 
                 if item ~= nil and amount ~= nil then
-                    local recipe_results = calculate_requirements(item, amount)
-                    -- Remove previous result label if present
+                    local recipe_results = calculate_requirements(item, amount, 1)
                     local result_label_name = "resource_calculator_result_label"
+                    local sum_result_label_name = "resource_calculator_sum_result_label"
+                    local sum_ingredients_table = {}
+                    -- Sum the requirements
+                    if recipe_results.ingredients then
+                        for _, ingredient in pairs(recipe_results.ingredients) do
+                            sum_requirements(ingredient, sum_ingredients_table)
+                        end
+                    end
+                    -- Remove previous result labels if present
                     local content_flow = frame.children[2]
                     for _, child in pairs(content_flow.children) do
-                        if child.name == result_label_name then
+                        if child.name == result_label_name or child.name == sum_result_label_name then
                             child.destroy()
                         end
                     end
@@ -335,6 +356,12 @@ script.on_event(defines.events.on_gui_click, function(event)
                         type = "label",
                         name = result_label_name,
                         caption = serialize_recipe_table(recipe_results, "  "),
+                        style = "caption_label"
+                    }
+                    content_flow.add{
+                        type = "label",
+                        name = sum_result_label_name,
+                        caption = serialize_recipe_table(sum_ingredients_table, "  "),
                         style = "caption_label"
                     }
                 else

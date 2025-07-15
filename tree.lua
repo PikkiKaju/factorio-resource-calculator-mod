@@ -109,129 +109,206 @@ end
 
 
 -- Add a tree node to the GUI
-local function add_tree_node(parent, node_info)
+local function add_tree_node(parent, node_info, layer, column, is_last)
+    layer = layer or 0
+    column = column or 0
+    local frame_type = is_last and "frame" or "flow"
+    -- Add vertical flow for the sprite and label
     local node_flow = parent.add{
+        type = frame_type,
+        name = "tree_node_flow_" .. layer .. "_" .. column .. "_" .. node_info.name,
+        direction = "vertical"
+    }
+    node_flow.style.vertical_align = "center"
+    node_flow.style.horizontal_align = "center"
+    node_flow.style.padding = 2
+
+    local node_sprite_numbers_flow = node_flow.add{
         type = "flow",
-        name = "tree_node_flow_" .. node_info.name,
-        direction = "horizontal",
-        vertical_align = "center"
+        direction = "horizontal"
     }
-    -- Add the node label
-    node_flow.add{
-        type = "label",
-        caption = node_info.name,
-        style = "caption_label"
-    }
-    -- Add the sprite if available
-    local sprite_name = "item/" .. node_info.name
-    node_flow.add{
+    node_sprite_numbers_flow.style.vertical_align = "center"
+    node_sprite_numbers_flow.style.horizontal_align = "center"
+    
+    -- Add the sprite
+
+    local sprite_name
+    if node_info.type == "fluid" then
+        sprite_name = "fluid/" .. node_info.name  
+    elseif node_info.type == "item" then
+        sprite_name = "item/" .. node_info.name
+    elseif node_info.type == "entity" then
+        sprite_name = "entity/" .. node_info.name
+    elseif node_info.type == "recipe" then
+        sprite_name = "recipe/" .. node_info.name
+    elseif node_info.type == "equipment" then
+        sprite_name = "equipment/" .. node_info.name
+    elseif node_info.type == "virtual-signal" then
+        sprite_name = "virtual-signal/" .. node_info.name
+    end
+
+    node_sprite_numbers_flow.add{
         type = "sprite",
         sprite = sprite_name,
         width = style.tree_node_sprite_dimensions.width,
         height = style.tree_node_sprite_dimensions.height,
+        horizontal_align = "center"
     }
     -- Add a vertical flow for the node's numbers
-    local numbers_flow = node_flow.add{
+    local numbers_flow = node_sprite_numbers_flow.add{
         type = "flow",
         direction = "vertical",
-        vertical_align = "center"
+        vertical_align = "center",
+        horizontal_align = "left"
     }
+
     -- Add the amount label
-    numbers_flow.add{
-        type = "label",
-        caption = string.format(" (%.2f/s)", node_info.item_amount_per_second),
-        style = "caption_label"
-    }
+    if node_info.item_amount_per_second then
+        numbers_flow.add{
+            type = "label",
+            caption = string.format("Prod. rate: %.2f/s", node_info.item_amount_per_second),
+            style = "caption_label"
+        }
+    else
+        numbers_flow.add{
+            type = "label",
+            caption = "Amount: N/A",
+            style = "caption_label"
+        }
+    end
+    
     -- Add the machines label
-    numbers_flow.add{
+    if node_info.machines_amount then
+        numbers_flow.add{
+            type = "label",
+            caption = string.format("Machines: %.2f", node_info.machines_amount),
+            style = "caption_label"
+        }
+    else
+        numbers_flow.add{
+            type = "label",
+            caption = "",
+            style = "caption_label"
+        }
+    end 
+
+    -- Add the item name label
+    node_flow.add{
         type = "label",
-        caption = string.format(" (%.2f/s)", node_info.machines_amount),
-        style = "caption_label"
+        caption = string.gsub(node_info.name, "-", " "),
+        style = "caption_label",
     }
+    
+end
+
+-- Add a tree layer to the GUI
+local function add_tree_layer(parent, layer, column, node_spacing)
+    -- Create a horizontal flow for nodes
+    local content_flow = parent.add{
+        type = "frame",
+        name = "tree_layer_flow_" .. layer .. "_" .. column,
+        direction = "vertical",
+        horizontal_spacing = node_spacing
+    }
+    content_flow.style.horizontal_align = "center"
+    content_flow.style.vertical_align = "center"
+    local main_item = content_flow.add{
+        type = "flow"
+    }
+    main_item.style.horizontal_align = "center"
+    main_item.style.vertical_align = "center"
+    main_item.style.horizontally_stretchable = true
+    local ingredients = content_flow.add{
+        type = "flow",
+        direction = "horizontal",
+        vertical_align = "center",
+        horizontal_align = "center",
+        horizontal_spacing = node_spacing
+    }
+    return {
+        content_flow = content_flow,
+        main_item = main_item,
+        ingredients = ingredients
+    } 
 end
 
 
--- Recursively add a graphical tree of recipe results to the GUI
-local function add_graphicap_recipe_tree_to_gui(parent, recipe_table, indent_level, is_last, pipes)
-    is_last = is_last or false
-    pipes = pipes or {}
+local function add_graphicap_recipe_tree_to_gui(parent, recipe_table, layer, column)
+    layer = layer or 0
+    column = column or 0
+    local is_last = false
+    if recipe_table.ingredients and #recipe_table.ingredients > 0 then
+        is_last = false
+    end
 
-    -- Create a vertical flow for each node
-    local content_flow = parent.add{
-        type = "flow",
-        direction = "vertical",
-        vertical_align = "center"
-    }
+    -- Add a new layer for main item and ingredients
+    local layer_flows = add_tree_layer(parent, layer, column, 10)
 
-    -- Add top-level node
-    local item_flow = content_flow.add{
-        type = "flow",
-        direction = "horizontal"
-    }
+    -- Add the main item node
+    add_tree_node(
+        layer_flows.main_item, 
+        {
+            name = recipe_table.name,
+            item_amount_per_second = recipe_table.item_amount_per_second,
+            machines_amount = recipe_table.machines_amount,
+            type = recipe_table.type or "unknown"
+        },
+        layer,
+        0,
+        is_last
+    )
 
-    -- Add recipe tree
-    add_text_recipe_tree_to_gui(content_flow, recipe_table, indent_level, is_last, pipes)
-
-    -- Indent visually using empty-widget for spacing
-    -- if indent_level > 0 then
-    --     item_flow.add{
-    --         type = "empty-widget",
-    --         style = "empty_widget",
-    --         -- width per indent level
-    --         minimal_width = 24 * indent_level,
-    --         maximal_width = 24 * indent_level
-    --     }
-    -- end
-
-    -- Draw vertical arrow if there are children
-    -- if recipe_table.ingredients and #recipe_table.ingredients > 0 then
-    --     local arrow_flow = node_flow.add{
-    --         type = "flow",
-    --         direction = "vertical"
-    --     }
-    --     arrow_flow.add{
-    --         type = "line",
-    --         direction = "vertical"
-    --     }
-        -- Optionally, add a label with a Unicode arrow for clarity
-        -- arrow_flow.add{
-        --     type = "label",
-        --     caption = "↓",
-        --     style = "caption_label"
-        -- }
-    -- end
+    -- If there are ingredients, recursively add them to the next layer
+    if recipe_table.ingredients and #recipe_table.ingredients > 0 then
+        local child_column = column
+        for _, ingredient in ipairs(recipe_table.ingredients) do
+            add_graphicap_recipe_tree_to_gui(layer_flows.ingredients, ingredient, layer + 1, child_column)
+            child_column = child_column + 1
+        end
+    end
 end
 
 
 -- Add tree for recipe results
 function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table)
     local tree_scroll = parent.add{
-        type = "scroll-pane",
-        name = "resource_calculator_result_tree",
-        direction = "vertical"
+        type = "flow",
+        name = "resource_calculator_result_flow",
+        direction = "vertical",
+        vertical_align = "top",
+        horizontal_align = "center"
     }
-    tree_scroll.style.minimal_height = style.calculator_window_tree_dimensions.height 
+    tree_scroll.style.minimal_height = style.calculator_window_tree_dimensions.height
     tree_scroll.style.maximal_height = style.calculator_window_tree_dimensions.height
     tree_scroll.style.minimal_width = style.calculator_window_tree_dimensions.width
     tree_scroll.style.maximal_width = style.calculator_window_tree_dimensions.width
-    tree_scroll.vertical_scroll_policy = "dont-show-but-allow-scrolling"
-    tree_scroll.horizontal_scroll_policy = "never"
-
+    tree_scroll.style.margin = style.calculator_window_tree_dimensions.margin   
+    
     -- Add a top-level label for clarity
     tree_scroll.add{
         type = "label",
         caption = "Recipe breakdown:",
         style = "caption_label"
     }
-    add_text_recipe_tree_to_gui(tree_scroll, recipe_results, 0, true)
 
-    M.add_summed_requirements_to_gui(tree_scroll, recipe_results, sum_ingredients_table)
-    
-    add_tree_node(parent, {
-        name = "iron-plate",
-        item_amount_per_second = 10,
-        machines_amount = 2
-    })
+    -- Add a scroll pane for the tree and summed ingredients requirements
+    local tree_flow = tree_scroll.add{
+        type = "scroll-pane",
+        name = "resource_calculator_result_tree",
+        direction = "vertical"
+    }
+    tree_flow.style.minimal_height = style.calculator_window_tree_dimensions.height 
+    tree_flow.style.maximal_height = style.calculator_window_tree_dimensions.height
+    tree_flow.style.minimal_width = style.calculator_window_tree_dimensions.width
+    tree_flow.style.maximal_width = style.calculator_window_tree_dimensions.width
+
+    tree_flow.vertical_scroll_policy = "dont-show-but-allow-scrolling"
+    tree_flow.horizontal_scroll_policy = "dont-show-but-allow-scrolling"
+
+    add_graphicap_recipe_tree_to_gui(tree_flow, recipe_results, 0, 0)
+    -- add_text_recipe_tree_to_gui(tree_flow, recipe_results, 0, true)
+
+    -- M.add_summed_requirements_to_gui(tree_flow, recipe_results, sum_ingredients_table)
 end
 
 return M

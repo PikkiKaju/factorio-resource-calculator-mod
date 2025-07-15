@@ -43,6 +43,7 @@ function M.calculate_requirements(target_item_name, target_production_rate, mach
     end
     recipe_table = {
         name = target_item_name,
+        type = recipe.main_product.type,
         item_amount_per_second = target_production_rate,
         process_amount_per_second = process_amount,
         machines_amount = machines_amount,
@@ -52,6 +53,7 @@ function M.calculate_requirements(target_item_name, target_production_rate, mach
 
     return recipe_table
 end
+
 
 function M.sum_requirements(recipe_results, sum_ingredients_table)
     local name = recipe_results.name

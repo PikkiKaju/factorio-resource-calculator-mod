@@ -27,13 +27,13 @@ end
 
 
 -- Function to add a draggable titlebar to the GUI frame
-function M.add_titlebar(gui, caption, close_button_name)
+local function add_titlebar(gui)
   local titlebar = gui.add{type = "flow"}
   titlebar.drag_target = gui
   titlebar.add{
     type = "label",
     style = "frame_title",
-    caption = caption,
+    caption = {"gui.calculator-frame-title"},
     ignored_by_interaction = true,
   }
   local filler = titlebar.add{
@@ -41,11 +41,11 @@ function M.add_titlebar(gui, caption, close_button_name)
     style = "draggable_space",
     ignored_by_interaction = true,
   }
-  filler.style.height = 24
+  filler.style.height = style.calculator_window_titlebar_dimensions.height
   filler.style.horizontally_stretchable = true
   titlebar.add{
     type = "sprite-button",
-    name = close_button_name,
+    name = "resource_calculator_close_button",
     style = "frame_action_button",
     sprite = "utility/close",
     hovered_sprite = "utility/close_black",
@@ -55,52 +55,28 @@ function M.add_titlebar(gui, caption, close_button_name)
 end
 
 
--- Function to open the calculator GUI window
-function M.open_calculator_gui(player)
-    local gui = player.gui.screen
-    local frame_name = "resource_calculator_frame"
-    if gui[frame_name] then
-        gui[frame_name].destroy() -- Remove existing frame if present
-    end
-
-    -- Ensure the global filter variable exists
-    if global.calculator_recipies_filter_enabled[player.index] == nil then
-        global.calculator_recipies_filter_enabled[player.index] = true
-    end
-
-    -- Create a new frame for the calculator GUI
-    local frame = gui.add{
-        type = "frame",
-        name = frame_name,
-        direction = "vertical"
-    }
-    frame.style.minimal_width = style.calculator_window_dimensions.width
-    frame.style.maximal_width = style.calculator_window_dimensions.width
-    frame.style.minimal_height = style.calculator_window_dimensions.height
-    frame.style.maximal_height = style.calculator_window_dimensions.height
-    frame.auto_center = true
-
-    -- Add a titlebar to the frame
-    M.add_titlebar(frame, {"gui.calculator-frame-title"}, "resource_calculator_close_button")
-
+local function add_form_flow(parent, player)
     -- Content flow below titlebar
-    local content_flow = frame.add{
+    local form_flow = parent.add{
         type = "flow",
         direction = "vertical"
     }
-    content_flow.style.vertical_spacing = 12
-    content_flow.style.maximal_height = 420
-    content_flow.style.minimal_height = 420
+    form_flow.style.maximal_height = style.calculator_window_content_dimensions.height
+    form_flow.style.minimal_height = style.calculator_window_content_dimensions.height
+    form_flow.style.maximal_width = style.calculator_window_content_dimensions.width
+    form_flow.style.minimal_width = style.calculator_window_content_dimensions.width
+    form_flow.style.margin = style.calculator_window_content_dimensions.margin
+    form_flow.style.vertical_spacing = 12
     
     -- Add a label for the item picker
-    content_flow.add{
+    form_flow.add{
         type = "label",
         caption = {"gui.calculator-item-picker-label"},
         style = "caption_label"
     }
 
     -- Add horizontal flow for item picker and number input
-    local item_picker_flow = content_flow.add{
+    local item_picker_flow = form_flow.add{
         type = "flow",
         direction = "horizontal",
         style = "horizontal_flow",
@@ -110,7 +86,7 @@ function M.open_calculator_gui(player)
 
     -- Create a filter for the item picker
     local filters = {}
-    
+
     if global.calculator_recipies_filter_enabled[player.index] then
         for name, recipe in pairs(player.force.recipes) do
             if recipe.enabled then
@@ -148,17 +124,58 @@ function M.open_calculator_gui(player)
         style = "caption_label" 
     }
     -- Add a checkbox for excluding undiscovered recipes
-    content_flow.add{
+    form_flow.add{
         type = "checkbox",
         name = "exclude_undiscovered_recipes",
         caption = {"gui.calculator-exclude-undiscovered-recipes-checkbox-label"},
         state = global.calculator_recipies_filter_enabled[player.index]
     }
     -- Add a confirm button
-    content_flow.add{ 
+    form_flow.add{ 
         type = "button", 
         name = "resource_calculator_confirm_button", 
         caption = {"gui.calculator-confirm-button"} 
+    }
+end
+
+
+-- Function to open the calculator GUI window
+function M.open_calculator_gui(player)
+    local gui = player.gui.screen
+    local frame_name = "resource_calculator_frame"
+    if gui[frame_name] then
+        gui[frame_name].destroy() -- Remove existing frame if present
+    end
+
+    -- Ensure the global filter variable exists
+    if global.calculator_recipies_filter_enabled[player.index] == nil then
+        global.calculator_recipies_filter_enabled[player.index] = true
+    end
+
+    -- Create a new frame for the calculator GUI
+    local frame = gui.add{
+        type = "frame",
+        name = frame_name,
+        direction = "vertical"
+    }
+    frame.style.minimal_width = style.calculator_window_dimensions.width
+    frame.style.maximal_width = style.calculator_window_dimensions.width
+    frame.style.minimal_height = style.calculator_window_dimensions.height
+    frame.style.maximal_height = style.calculator_window_dimensions.height
+    frame.style.padding = style.calculator_window_dimensions.padding
+    frame.auto_center = true
+
+    -- Add a titlebar to the frame
+    add_titlebar(frame)
+
+    -- Add a form with item picker and number input
+    add_form_flow(frame, player)
+    
+    -- Add a scrollable tree for displaying recipes
+    local content_flow = frame.add{
+        type = "flow",
+        name = "resource_calculator_content_flow",
+        direction = "vertical"
     }
 end
 

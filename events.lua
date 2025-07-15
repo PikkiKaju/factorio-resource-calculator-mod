@@ -92,13 +92,11 @@ function M.register()
                                 calculator.sum_requirements(ingredient, sum_ingredients_table)
                             end
                         end
-                        -- Remove previous result labels/tree if present
-                        local content_flow = frame.children[2]
+                        -- Remove previous calculator content
+                        local content_flow = frame.resource_calculator_content_flow
                         
                         for _, child in pairs(content_flow.children) do
-                            if child.name == result_label_name or child.name == sum_result_label_name or child.name == "resource_calculator_result_tree" then
-                                child.destroy()
-                            end
+                            child.destroy()
                         end
                         
                         tree.add_recipe_tree(content_flow, recipe_results, sum_ingredients_table)

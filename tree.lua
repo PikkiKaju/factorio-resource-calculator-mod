@@ -171,8 +171,6 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
         horizontal_align = "left"
     }
 
-    game.players[1].print("Mode: " .. (compact_mode and "compact" or "full") .. " mode")
-
     -- Add the amount label
     if node_info.item_amount_per_second then
         local rate_label = compact_mode and {"gui-tree.production-rate-label-short"} or {"gui-tree.production-rate-label-long"}

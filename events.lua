@@ -14,6 +14,8 @@ function M.register()
         global.calculator_compact_mode_enabled = {}
         global.calculator_raw_ingredients_mode_enabled = {}
         global.calculator_tree_mode = {}
+        global.calculator_last_picked_item = {}
+        global.calculator_last_picked_production_rate = {}
 
         -- Create the GUI button for all existing players
         for _, player in pairs(game.players) do
@@ -30,6 +32,8 @@ function M.register()
             global.calculator_compact_mode_enabled[player.index] = true
             global.calculator_raw_ingredients_mode_enabled[player.index] = false
             global.calculator_tree_mode[player.index] = 2 -- Default to text mode
+            global.calculator_last_picked_item[player.index] = nil -- Initialize last picked item
+            global.calculator_last_picked_production_rate[player.index] = 1 -- Initialize last picked amount
         end
     end)
 
@@ -94,15 +98,44 @@ function M.register()
         end
     end)
 
+    -- Handle item picker changes to store values immediately
+    script.on_event(defines.events.on_gui_elem_changed, function(event)
+        local element = event.element
+        local player = game.get_player(event.player_index)
+        if element and element.name == "resource_calculator_item_picker" then
+            if element.elem_value then
+                global.calculator_last_picked_item[player.index] = element.elem_value
+            else
+                global.calculator_last_picked_item[player.index] = nil
+            end
+        end
+    end)
+
+    -- Handle number input changes to store last picked amount
+    script.on_event(defines.events.on_gui_text_changed, function(event)
+        local element = event.element
+        local player = game.get_player(event.player_index)
+        if element and element.name == "resource_calculator_number_input" then
+            local value = tonumber(element.text)
+            if value and value > 0 then
+                global.calculator_last_picked_production_rate[player.index] = value
+            else
+                global.calculator_last_picked_production_rate[player.index] = 1
+            end
+        end
+    end)
+
     -- Handle the click event for the calculator button
     script.on_event(defines.events.on_gui_click, function(event)
         local element = event.element
+
         -- If the clicked element is the calculator button, open the GUI
         if element and element.name == "resource_calculator_button" then
             local player = game.get_player(event.player_index)
             if player then
                 gui.open_calculator_gui(player)
             end
+
         -- If the clicked element is the confirm button, process the input
         elseif element and element.name == "resource_calculator_confirm_button" then
             local player = game.get_player(event.player_index)
@@ -115,6 +148,7 @@ function M.register()
                     local item = item_picker and item_picker.elem_value or nil
                     local amount = number_input and tonumber(number_input.text) or 1
                     
+
                     if prototypes == nil then
                         player.print("'prototypes' object not available.")
                         return

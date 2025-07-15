@@ -99,19 +99,24 @@ local function add_form_flow(parent, player)
     end
 
     -- Add an item picker
-    item_picker_flow.add{ 
+    local item_picker = item_picker_flow.add{ 
         type = "choose-elem-button", 
         name = "resource_calculator_item_picker", 
         caption = {"gui.calculator-item-picker-placeholder"},
         elem_type = "item",
         elem_filters = filters
     }
+    -- 
+    if global.calculator_last_picked_item and global.calculator_last_picked_item[player.index] then
+        item_picker.elem_value = global.calculator_last_picked_item[player.index]
+    end
 
     -- Add a number input
+    local number_input_text = tostring(global.calculator_last_picked_production_rate[player.index])
     local number_input = item_picker_flow.add{ 
         type = "textfield", 
         name = "resource_calculator_number_input", 
-        text = "1", 
+        text = number_input_text, 
         numeric = true, 
         allow_decimal = true, 
         allow_negative = false,

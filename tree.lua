@@ -175,7 +175,9 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
     if node_info.item_amount_per_second then
         local rate_label = compact_mode and {"gui-tree.production-rate-label-short"} or {"gui-tree.production-rate-label-long"}
         local rate_value = 0
-        if node_info.item_amount_per_second >= 10 then
+        if node_info.item_amount_per_second >= 100 then
+            rate_value = string.format("%.0f", node_info.item_amount_per_second)
+        elseif node_info.item_amount_per_second >= 10 then
             rate_value = string.format("%.1f", node_info.item_amount_per_second)
         else
             rate_value = string.format("%.2f", node_info.item_amount_per_second)
@@ -198,7 +200,9 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
     if node_info.machines_amount then
         local machines_label = compact_mode and {"gui-tree.machines-amount-label-short"} or {"gui-tree.machines-amount-label-long"}
         local machines_value = 0
-        if node_info.machines_amount >= 10 then
+        if node_info.machines_amount >= 100 then
+            machines_value = string.format("%.0f", node_info.machines_amount)
+        elseif node_info.machines_amount >= 10 then
             machines_value = string.format("%.1f", node_info.machines_amount)
         else
             machines_value = string.format("%.2f", node_info.machines_amount)
@@ -207,12 +211,6 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
         numbers_flow.add{
             type = "label",
             caption = {"", machines_label, ": ", machines_value},
-            style = "caption_label"
-        }
-    else
-        numbers_flow.add{
-            type = "label",
-            caption = "",
             style = "caption_label"
         }
     end 

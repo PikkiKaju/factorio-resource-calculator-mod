@@ -7,7 +7,7 @@ style.tree_node_sprite_dimensions = {
 }
 
 style.calculator_window_dimensions = {
-    width = 800,
+    width = 1200,
     padding = 10
 }
 style.calculator_window_titlebar_dimensions= {
@@ -15,7 +15,7 @@ style.calculator_window_titlebar_dimensions= {
 }
 style.calculator_window_content_dimensions = {
     width = style.calculator_window_dimensions.width - 2 * style.calculator_window_dimensions.padding,
-    height = 170,
+    height = 190,
     margin = 0
 }
 style.calculator_window_tree_dimensions = {

@@ -3,10 +3,16 @@ local style = require("style")
 local M = {}
 
 -- Recursively add a text tree of recipe results to the GUI
-local function add_text_recipe_tree_to_gui(parent, recipe_table, indent_level, is_last, pipes)
+local function add_text_recipe_tree_to_gui(parent, recipe_table, indent_level, is_last, pipes, raw_ingredients_mode)
     indent_level = indent_level or 0
     is_last = is_last or false
     pipes = pipes or {}
+
+    -- Check if the item is a raw ingredient
+    if raw_ingredients_mode and recipe_table.machines_amount == nil then
+        return
+    end
+
     local flow = parent.add{
         type = "flow",
         direction = "horizontal"
@@ -16,7 +22,8 @@ local function add_text_recipe_tree_to_gui(parent, recipe_table, indent_level, i
     if indent_level > 0 then
         for i = 1, indent_level do
             if i == indent_level then
-                if recipe_table.ingredients and #recipe_table.ingredients > 0 then
+                -- Only show ┬ for non-raw ingredients (machines_amount present)
+                if recipe_table.ingredients and #recipe_table.ingredients > 0 and recipe_table.ingredients[1].machines_amount ~= nil then
                     branch = branch .. (is_last and "└┬ " or "├┬ ")
                 else
                     branch = branch .. (is_last and "└─ " or "├─ ")
@@ -58,7 +65,7 @@ local function add_text_recipe_tree_to_gui(parent, recipe_table, indent_level, i
             local new_pipes = {}
             for k, v in pairs(pipes) do new_pipes[k] = v end
             new_pipes[indent_level + 1] = (i ~= #recipe_table.ingredients)
-            add_text_recipe_tree_to_gui(parent, ingredient, indent_level + 1, i == #recipe_table.ingredients, new_pipes)
+            add_text_recipe_tree_to_gui(parent, ingredient, indent_level + 1, i == #recipe_table.ingredients, new_pipes, raw_ingredients_mode)
         end
     end
 end
@@ -109,7 +116,7 @@ end
 
 
 -- Add a tree node to the GUI
-local function add_tree_node(parent, node_info, layer, column, is_last)
+local function add_tree_node(parent, node_info, layer, column, is_last, compact_mode)
     layer = layer or 0
     column = column or 0
     local frame_type = is_last and "frame" or "flow"
@@ -120,8 +127,9 @@ local function add_tree_node(parent, node_info, layer, column, is_last)
         direction = "vertical"
     }
     node_flow.style.vertical_align = "center"
-    node_flow.style.horizontal_align = "center"
+    node_flow.style.horizontal_align = "left"
     node_flow.style.padding = 2
+    node_flow.style.vertical_spacing = 1
 
     local node_sprite_numbers_flow = node_flow.add{
         type = "flow",
@@ -129,6 +137,7 @@ local function add_tree_node(parent, node_info, layer, column, is_last)
     }
     node_sprite_numbers_flow.style.vertical_align = "center"
     node_sprite_numbers_flow.style.horizontal_align = "center"
+    node_sprite_numbers_flow.style.horizontal_spacing = 1
     
     -- Add the sprite
 
@@ -162,11 +171,21 @@ local function add_tree_node(parent, node_info, layer, column, is_last)
         horizontal_align = "left"
     }
 
+    game.players[1].print("Mode: " .. (compact_mode and "compact" or "full") .. " mode")
+
     -- Add the amount label
     if node_info.item_amount_per_second then
+        local rate_label = compact_mode and {"gui-tree.production-rate-label-short"} or {"gui-tree.production-rate-label-long"}
+        local rate_value = 0
+        if node_info.item_amount_per_second >= 10 then
+            rate_value = string.format("%.1f", node_info.item_amount_per_second)
+        else
+            rate_value = string.format("%.2f", node_info.item_amount_per_second)
+        end
+
         numbers_flow.add{
             type = "label",
-            caption = string.format("Prod. rate: %.2f/s", node_info.item_amount_per_second),
+            caption = {"", rate_label, ": ", rate_value},
             style = "caption_label"
         }
     else
@@ -179,9 +198,17 @@ local function add_tree_node(parent, node_info, layer, column, is_last)
     
     -- Add the machines label
     if node_info.machines_amount then
+        local machines_label = compact_mode and {"gui-tree.machines-amount-label-short"} or {"gui-tree.machines-amount-label-long"}
+        local machines_value = 0
+        if node_info.machines_amount >= 10 then
+            machines_value = string.format("%.1f", node_info.machines_amount)
+        else
+            machines_value = string.format("%.2f", node_info.machines_amount)
+        end
+
         numbers_flow.add{
             type = "label",
-            caption = string.format("Machines: %.2f", node_info.machines_amount),
+            caption = {"", machines_label, ": ", machines_value},
             style = "caption_label"
         }
     else
@@ -212,6 +239,8 @@ local function add_tree_layer(parent, layer, column, node_spacing)
     }
     content_flow.style.horizontal_align = "center"
     content_flow.style.vertical_align = "center"
+    content_flow.style.padding = 2
+
     local main_item = content_flow.add{
         type = "flow"
     }
@@ -233,12 +262,17 @@ local function add_tree_layer(parent, layer, column, node_spacing)
 end
 
 
-local function add_graphicap_recipe_tree_to_gui(parent, recipe_table, layer, column)
+local function add_graphicap_recipe_tree_to_gui(parent, recipe_table, layer, column, compact_mode, raw_ingredients_mode)
     layer = layer or 0
     column = column or 0
     local is_last = false
     if recipe_table.ingredients and #recipe_table.ingredients > 0 then
         is_last = false
+    end
+
+    -- Check if the item is a raw ingredient
+    if raw_ingredients_mode and recipe_table.machines_amount == nil then
+        return
     end
 
     -- Add a new layer for main item and ingredients
@@ -255,14 +289,15 @@ local function add_graphicap_recipe_tree_to_gui(parent, recipe_table, layer, col
         },
         layer,
         0,
-        is_last
+        is_last,
+        compact_mode
     )
 
     -- If there are ingredients, recursively add them to the next layer
     if recipe_table.ingredients and #recipe_table.ingredients > 0 then
         local child_column = column
         for _, ingredient in ipairs(recipe_table.ingredients) do
-            add_graphicap_recipe_tree_to_gui(layer_flows.ingredients, ingredient, layer + 1, child_column)
+            add_graphicap_recipe_tree_to_gui(layer_flows.ingredients, ingredient, layer + 1, child_column, compact_mode, raw_ingredients_mode)
             child_column = child_column + 1
         end
     end
@@ -270,7 +305,7 @@ end
 
 
 -- Add tree for recipe results
-function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table)
+function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table, tree_mode, compact_mode, raw_ingredients_mode)
     local tree_scroll = parent.add{
         type = "flow",
         name = "resource_calculator_result_flow",
@@ -305,10 +340,15 @@ function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table)
     tree_flow.vertical_scroll_policy = "dont-show-but-allow-scrolling"
     tree_flow.horizontal_scroll_policy = "dont-show-but-allow-scrolling"
 
-    add_graphicap_recipe_tree_to_gui(tree_flow, recipe_results, 0, 0)
-    -- add_text_recipe_tree_to_gui(tree_flow, recipe_results, 0, true)
+    if tree_mode == 1 then
+        -- Text mode
+        add_text_recipe_tree_to_gui(tree_flow, recipe_results, 0, true, {}, raw_ingredients_mode)
+    else
+        -- Graphical mode
+        add_graphicap_recipe_tree_to_gui(tree_flow, recipe_results, 0, 0, compact_mode, raw_ingredients_mode)
+    end
 
-    -- M.add_summed_requirements_to_gui(tree_flow, recipe_results, sum_ingredients_table)
+    M.add_summed_requirements_to_gui(tree_flow, recipe_results, sum_ingredients_table)
 end
 
 return M

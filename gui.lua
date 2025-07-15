@@ -106,6 +106,7 @@ local function add_form_flow(parent, player)
         elem_type = "item",
         elem_filters = filters
     }
+
     -- Add a number input
     local number_input = item_picker_flow.add{ 
         type = "textfield", 
@@ -117,19 +118,67 @@ local function add_form_flow(parent, player)
     }
     number_input.style.minimal_width = 40
     number_input.style.maximal_width = 40
+
     -- Add a label for the number input
-    item_picker_flow.add{ 
+    local item_picker_label = item_picker_flow.add{ 
         type = "label", 
         caption = "/s",
         style = "caption_label" 
     }
+    item_picker_label.style.right_margin = 20
+
     -- Add a checkbox for excluding undiscovered recipes
-    form_flow.add{
+    item_picker_flow.add{
         type = "checkbox",
         name = "exclude_undiscovered_recipes",
         caption = {"gui.calculator-exclude-undiscovered-recipes-checkbox-label"},
         state = global.calculator_recipies_filter_enabled[player.index]
     }
+
+    -- Add a label for additional options
+    form_flow.add{
+        type = "label",
+        caption = {"gui.calculator-aditional-options-label"},
+        style = "caption_label"
+    }   
+    local additional_options_flow = form_flow.add{
+        type = "flow",
+        direction = "horizontal",
+        name = "form_checkboxes"
+    }
+    additional_options_flow.style.horizontal_spacing = 20 
+    additional_options_flow.style.vertical_align = "center" 
+    
+    -- Add a dropdown for tree mode selection
+    local dropdown_items = {
+        {"gui.calculator-calculator-dropdown-tree-mode-text"},
+        {"gui.calculator-calculator-dropdown-tree-mode-graphical"}
+    }
+    local tree_mode_dropdown = additional_options_flow.add{
+        type = "drop-down",
+        name = "calculator_tree_mode_dropdown",
+        caption = {"gui.calculator-text-or-graphical-mode-checkbox-label"},
+        items = dropdown_items,
+        selected_index = global.calculator_tree_mode[player.index]
+    }
+    tree_mode_dropdown.style.minimal_width = 200
+    tree_mode_dropdown.style.maximal_width = 200
+
+    -- Add a checkbox for compact mode
+    additional_options_flow.add{
+        type = "checkbox",
+        name = "compact_mode_checkbox",
+        caption = {"gui.calculator-compact-mode-label"},
+        state = global.calculator_compact_mode_enabled[player.index]
+    }
+    -- Add a checkbox to enable raw ingredients display
+    additional_options_flow.add{
+        type = "checkbox",
+        name = "raw_ingredients_mode_checkbox",
+        caption = {"gui.calculator-raw-ingredients-mode-label"},
+        state = global.calculator_raw_ingredients_mode_enabled[player.index]
+    }
+
     -- Add a confirm button
     form_flow.add{ 
         type = "button", 
@@ -150,6 +199,11 @@ function M.open_calculator_gui(player)
     -- Ensure the global filter variable exists
     if global.calculator_recipies_filter_enabled[player.index] == nil then
         global.calculator_recipies_filter_enabled[player.index] = true
+    end
+
+    -- Ensure the tree mode variable exists
+    if global.calculator_tree_mode[player.index] == nil then
+        global.calculator_tree_mode[player.index] = 1
     end
 
     -- Create a new frame for the calculator GUI

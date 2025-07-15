@@ -8,8 +8,13 @@ local M = {}
 function M.register()    
     -- This function is called when the mod is loaded and the game starts or a save is loaded.
     script.on_init(function()   
+        -- Initialize global variables if they don't exist
         if not global then global = {} end
         global.calculator_recipies_filter_enabled = {}
+        global.calculator_compact_mode_enabled = {}
+        global.calculator_raw_ingredients_mode_enabled = {}
+        global.calculator_tree_mode = {}
+
         -- Create the GUI button for all existing players
         for _, player in pairs(game.players) do
             gui.create_calculator_button(player)
@@ -21,7 +26,10 @@ function M.register()
         local player = game.get_player(event.player_index)
         if player then
             gui.create_calculator_button(player)
-            global.calculator_recipies_filter_enabled[player.index] = true
+            global.calculator_recipies_filter_enabled[player.index] = false
+            global.calculator_compact_mode_enabled[player.index] = true
+            global.calculator_raw_ingredients_mode_enabled[player.index] = false
+            global.calculator_tree_mode[player.index] = 2 -- Default to text mode
         end
     end)
 
@@ -34,6 +42,39 @@ function M.register()
                 local prev_state = global.calculator_recipies_filter_enabled[player.index]
                 if prev_state ~= element.state then
                     global.calculator_recipies_filter_enabled[player.index] = element.state
+                    gui.open_calculator_gui(player)
+                end
+            end
+        elseif element and element.name == "compact_mode_checkbox" then
+            local player = game.get_player(event.player_index)
+            if player then
+                local prev_state = global.calculator_compact_mode_enabled[player.index]
+                if prev_state ~= element.state then
+                    global.calculator_compact_mode_enabled[player.index] = element.state
+                    gui.open_calculator_gui(player)
+                end
+            end
+        elseif element and element.name == "raw_ingredients_mode_checkbox" then
+            local player = game.get_player(event.player_index)
+            if player then
+                local prev_state = global.calculator_raw_ingredients_mode_enabled[player.index]
+                if prev_state ~= element.state then
+                    global.calculator_raw_ingredients_mode_enabled[player.index] = element.state
+                    gui.open_calculator_gui(player)
+                end
+            end
+        end
+    end)
+
+    -- Handle dropdown change to update tree mode per player
+    script.on_event(defines.events.on_gui_selection_state_changed, function(event)
+        local element = event.element
+        if element and element.name == "calculator_tree_mode_dropdown" then
+            local player = game.get_player(event.player_index)
+            if player then
+                local selected_index = element.selected_index
+                if global.calculator_tree_mode[player.index] ~= selected_index then
+                    global.calculator_tree_mode[player.index] = selected_index
                     gui.open_calculator_gui(player)
                 end
             end
@@ -52,7 +93,6 @@ function M.register()
             end
         end
     end)
-
 
     -- Handle the click event for the calculator button
     script.on_event(defines.events.on_gui_click, function(event)
@@ -81,7 +121,6 @@ function M.register()
                     end
                     
                     if item ~= nil and amount ~= nil then
-                        player.print("Calculating for: " .. item .. " at " .. amount .. " / second")
                         local recipe_results = calculator.calculate_requirements(item, amount, 1)
                         local result_label_name = "resource_calculator_result_label"
                         local sum_result_label_name = "resource_calculator_sum_result_label"
@@ -99,7 +138,10 @@ function M.register()
                             child.destroy()
                         end
                         
-                        tree.add_recipe_tree(content_flow, recipe_results, sum_ingredients_table)
+                        local tree_mode = global.calculator_tree_mode[player.index]
+                        local compact_mode = global.calculator_compact_mode_enabled[player.index] or false
+                        local raw_ingredients_mode = global.calculator_raw_ingredients_mode_enabled[player.index] or false
+                        tree.add_recipe_tree(content_flow, recipe_results, sum_ingredients_table, tree_mode, compact_mode, raw_ingredients_mode)
                     else
                         player.print("Please select an item and enter a valid number.")
                     end

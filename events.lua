@@ -37,7 +37,7 @@ function M.register()
         end
     end)
 
-    -- Handle checkbox state change to update filters_enabled per player
+    -- Handle checkbox state change
     script.on_event(defines.events.on_gui_checked_state_changed, function(event)
         local element = event.element
         if element and element.name == "exclude_undiscovered_recipes" then
@@ -70,7 +70,7 @@ function M.register()
         end
     end)
 
-    -- Handle dropdown change to update tree mode per player
+    -- Handle dropdown change to update tree mode
     script.on_event(defines.events.on_gui_selection_state_changed, function(event)
         local element = event.element
         if element and element.name == "calculator_tree_mode_dropdown" then
@@ -173,8 +173,9 @@ function M.register()
                         end
                         
                         local tree_mode = global.calculator_tree_mode[player.index]
-                        local compact_mode = global.calculator_compact_mode_enabled[player.index] or false
-                        local raw_ingredients_mode = global.calculator_raw_ingredients_mode_enabled[player.index] or false
+                        local compact_mode = global.calculator_compact_mode_enabled[player.index]
+                        local raw_ingredients_mode = global.calculator_raw_ingredients_mode_enabled[player.index]
+                        
                         tree.add_recipe_tree(content_flow, recipe_results, sum_ingredients_table, tree_mode, compact_mode, raw_ingredients_mode)
                     else
                         player.print("Please select an item and enter a valid number.")
@@ -190,6 +191,13 @@ function M.register()
                     frame.destroy()
                 end
             end
+        end
+    end)
+
+    -- Close the GUI when the close event triggered (e.g., Escape)
+    script.on_event(defines.events.on_gui_closed, function(event)
+        if event.element and event.element.name == "resource_calculator_frame" then
+            event.element.destroy()
         end
     end)
 

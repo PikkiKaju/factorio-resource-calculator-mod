@@ -236,6 +236,9 @@ function M.open_calculator_gui(player)
         name = "resource_calculator_content_flow",
         direction = "vertical"
     }
+
+    -- Make Escape close the window
+    player.opened = frame
 end
 
 return M

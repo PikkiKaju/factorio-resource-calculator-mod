@@ -3,7 +3,6 @@ local events = require("scripts.events")
 local util = require("scripts.util")
 
 
--- This function is called when the mod is loaded and the game starts or a save is loaded.
 script.on_init(function()   
     -- Initialize global variables if they don't exist
     util.init_globals()

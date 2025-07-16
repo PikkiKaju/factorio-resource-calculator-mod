@@ -1,4 +1,3 @@
--- Style definitions for the GUI
 local style = {}
 
 style.tree_node_sprite_dimensions = {

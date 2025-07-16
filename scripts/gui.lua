@@ -2,7 +2,7 @@ local style = require("style")
 
 local M = {}
 
--- Function to create the calculator button in the top-right GUI
+-- Create the calculator button in the top-right GUI
 function M.create_calculator_button(player)
     local gui = player.gui.top
     local button_name = "resource_calculator_button"
@@ -26,7 +26,7 @@ function M.create_calculator_button(player)
 end
 
 
--- Function to add a draggable titlebar to the GUI frame
+-- Add a draggable titlebar to the GUI frame
 local function add_titlebar(gui)
   local titlebar = gui.add{type = "flow"}
   titlebar.drag_target = gui
@@ -55,8 +55,8 @@ local function add_titlebar(gui)
 end
 
 
+-- Add a form flow with item picker, number input and additional options
 local function add_form_flow(parent, player)
-    -- Content flow below titlebar
     local form_flow = parent.add{
         type = "flow",
         direction = "vertical"
@@ -193,7 +193,7 @@ local function add_form_flow(parent, player)
 end
 
 
--- Function to open the calculator GUI window
+-- Open the calculator GUI window
 function M.open_calculator_gui(player)
     local gui = player.gui.screen
     local frame_name = "resource_calculator_frame"

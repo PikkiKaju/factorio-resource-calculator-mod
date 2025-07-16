@@ -6,7 +6,6 @@ local util = require("scripts.util")
 local M = {}
 
 function M.register()    
-    -- This function is called when a player joins the game.
     script.on_event(defines.events.on_player_joined_game, function(event)
         local player = game.get_player(event.player_index)
         if player then
@@ -179,7 +178,6 @@ function M.register()
         end
     end)
 
-    -- This function is called when a player leaves the game (useful for cleaning up player-specific GUI elements)
     script.on_event(defines.events.on_player_left_game, function(event)
         local player = game.get_player(event.player_index)
         if player then

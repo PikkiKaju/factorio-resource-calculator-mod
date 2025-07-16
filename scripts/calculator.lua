@@ -1,6 +1,6 @@
 local M = {}
 
--- Function to calculate resource requirements for a given item and production rate
+-- Calculate resource requirements for a given item and production rate
 function M.calculate_requirements(target_item_name, target_production_rate, machine_speed)
     local recipe = prototypes.recipe[target_item_name]
     local recipe_table = {}
@@ -55,6 +55,7 @@ function M.calculate_requirements(target_item_name, target_production_rate, mach
 end
 
 
+-- Sum the ingredients requirements recursively
 function M.sum_requirements(recipe_results, sum_ingredients_table)
     local name = recipe_results.name
     local amount = recipe_results.item_amount_per_second

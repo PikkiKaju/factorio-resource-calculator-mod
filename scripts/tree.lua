@@ -86,6 +86,8 @@ function M.add_summed_requirements_to_gui(parent, recipe_results, sum_ingredient
         caption = "Summarized ingredients:",
         style = "caption_label"
     }
+
+    -- Sort the summed ingredients table by keys and display them
     local sum_keys = {}
     for k, _ in pairs(sum_ingredients_table) do table.insert(sum_keys, k) end
     table.sort(sum_keys)
@@ -131,6 +133,7 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
     node_flow.style.padding = 2
     node_flow.style.vertical_spacing = 1
 
+    -- Add a horizontal flow for the sprite and numbers
     local node_sprite_numbers_flow = node_flow.add{
         type = "flow",
         direction = "horizontal"
@@ -139,8 +142,8 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
     node_sprite_numbers_flow.style.horizontal_align = "center"
     node_sprite_numbers_flow.style.horizontal_spacing = 1
     
-    -- Add the sprite
-
+    -- Add a sprite for the node
+    -- Determine the sprite name based on the node type
     local sprite_name
     if node_info.type == "fluid" then
         sprite_name = "fluid/" .. node_info.name  
@@ -155,7 +158,7 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
     elseif node_info.type == "virtual-signal" then
         sprite_name = "virtual-signal/" .. node_info.name
     end
-
+    -- Add the sprite
     node_sprite_numbers_flow.add{
         type = "sprite",
         sprite = sprite_name,
@@ -163,6 +166,7 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
         height = style.tree_node_sprite_dimensions.height,
         horizontal_align = "center"
     }
+
     -- Add a vertical flow for the node's numbers
     local numbers_flow = node_sprite_numbers_flow.add{
         type = "flow",
@@ -171,7 +175,7 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
         horizontal_align = "left"
     }
 
-    -- Add the amount label
+    -- Add the production rate label
     if node_info.item_amount_per_second then
         local rate_label = compact_mode and {"gui-tree.production-rate-label-short"} or {"gui-tree.production-rate-label-long"}
         local rate_value = 0
@@ -224,6 +228,7 @@ local function add_tree_node(parent, node_info, layer, column, is_last, compact_
     
 end
 
+
 -- Add a tree layer to the GUI
 local function add_tree_layer(parent, layer, column, node_spacing)
     -- Create a horizontal flow for nodes
@@ -237,12 +242,15 @@ local function add_tree_layer(parent, layer, column, node_spacing)
     content_flow.style.vertical_align = "center"
     content_flow.style.padding = 2
 
+    -- Add a flow for the main item 
     local main_item = content_flow.add{
         type = "flow"
     }
     main_item.style.horizontal_align = "center"
     main_item.style.vertical_align = "center"
     main_item.style.horizontally_stretchable = true
+
+    -- Add a flow for the ingredients
     local ingredients = content_flow.add{
         type = "flow",
         direction = "horizontal",
@@ -258,6 +266,7 @@ local function add_tree_layer(parent, layer, column, node_spacing)
 end
 
 
+-- Add a graphical recipe tree to the GUI
 local function add_graphicap_recipe_tree_to_gui(parent, recipe_table, layer, column, compact_mode, raw_ingredients_mode)
     layer = layer or 0
     column = column or 0
@@ -333,9 +342,11 @@ function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table, tree_m
     tree_flow.vertical_scroll_policy = "dont-show-but-allow-scrolling"
     tree_flow.horizontal_scroll_policy = "dont-show-but-allow-scrolling"
 
-    if tree_mode == 1 then -- Text mode
+    if tree_mode == 1 then
+        -- Text mode
         add_text_recipe_tree_to_gui(tree_flow, recipe_results, 0, true, {}, raw_ingredients_mode)
-    elseif tree_mode == 2 then -- Graphical mode
+    elseif tree_mode == 2 then
+        -- Graphical mode
         add_graphicap_recipe_tree_to_gui(tree_flow, recipe_results, 0, 0, compact_mode, raw_ingredients_mode)
     end
 

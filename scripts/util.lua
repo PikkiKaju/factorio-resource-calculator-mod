@@ -1,7 +1,7 @@
 local M = {}
 
+-- Initialize global storage if it doesn't exist
 function M.init_globals()
-    -- Initialize storage variables if they don't exist
     if not storage then storage = {} end
     storage.calculator_recipies_filter_enabled = {}
     storage.calculator_compact_mode_enabled = {}
@@ -11,6 +11,8 @@ function M.init_globals()
     storage.calculator_last_picked_production_rate = {}
 end
 
+
+-- Initialize global variables for a specific player
 function M.init_globals_for_player(player)
     storage.calculator_recipies_filter_enabled[player.index] = player.mod_settings["calculator-exclude-undiscovered-recipes"].value
     storage.calculator_compact_mode_enabled[player.index] = player.mod_settings["calculator-compact-mode"].value

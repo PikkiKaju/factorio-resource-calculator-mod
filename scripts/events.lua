@@ -1,7 +1,7 @@
-local gui = require("gui")
-local calculator = require("calculator")
-local tree = require("tree")
-local util = require("util")
+local gui = require("scripts.gui")
+local calculator = require("scripts.calculator")
+local tree = require("scripts.tree")
+local util = require("scripts.util")
 
 local M = {}
 

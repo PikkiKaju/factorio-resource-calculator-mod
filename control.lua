@@ -1,6 +1,6 @@
-local gui = require("gui")
-local events = require("events")
-local util = require("util")
+local gui = require("scripts.gui")
+local events = require("scripts.events")
+local util = require("scripts.util")
 
 
 -- This function is called when the mod is loaded and the game starts or a save is loaded.

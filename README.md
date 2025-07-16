@@ -14,6 +14,10 @@
 - **Tree Display Modes:** View requirements as a text tree or graphical tree.
 - **Summarized Ingredients:** See a summary of all required ingredients per second.
 
+
+![](Preview1.png)
+![](Preview2.png)
+
 ## Usage
 
 1. Click the **Open Calculator** button in the top-right GUI or press `Ctrl+C`.
@@ -27,7 +31,9 @@
 
 ## Installation
 
-1. Download or clone this repository into your Factorio `mods` folder.
+
+
+1. [Download on the Mod Portal](https://mods.factorio.com/mod/production-calculator) or clone this repository into your Factorio `mods` folder.
 2. Ensure you are running Factorio version 2.0 or higher.
 3. Enable the mod in the Factorio mod manager.
 

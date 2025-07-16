@@ -1,0 +1,35 @@
+data:extend({
+  {
+    type = "bool-setting",
+    name = "calculator-exclude-undiscovered-recipes",
+    localised_name = { "mod-setting-name.calculator-exclude-undiscovered-recipes" },
+    setting_type = "runtime-per-user",
+    default_value = true,
+    order = "1",
+  },
+  {
+    type = "string-setting",
+    name = "calculator-tree-mode",
+    localised_name = { "mod-setting-name.calculator-calculator-dropdown-tree-mode" },
+    setting_type = "runtime-per-user",
+    allowed_values = { "Text", "Graphical" },
+    default_value = "Graphical",
+    order = "2",
+  },
+  {
+    type = "bool-setting",
+    name = "calculator-compact-mode",
+    localised_name = { "mod-setting-name.calculator-compact-mode" },
+    setting_type = "runtime-per-user",
+    default_value = false,
+    order = "3",
+  },
+  {
+    type = "bool-setting",
+    name = "calculator-raw-ingredients-mode",
+    localised_name = { "mod-setting-name.calculator-raw-ingredients-mode" },
+    setting_type = "runtime-per-user",
+    default_value = true,
+    order = "4",
+  },
+})

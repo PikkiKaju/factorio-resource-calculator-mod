@@ -333,11 +333,9 @@ function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table, tree_m
     tree_flow.vertical_scroll_policy = "dont-show-but-allow-scrolling"
     tree_flow.horizontal_scroll_policy = "dont-show-but-allow-scrolling"
 
-    if tree_mode == 1 then
-        -- Text mode
+    if tree_mode == 1 then -- Text mode
         add_text_recipe_tree_to_gui(tree_flow, recipe_results, 0, true, {}, raw_ingredients_mode)
-    else
-        -- Graphical mode
+    elseif tree_mode == 2 then -- Graphical mode
         add_graphicap_recipe_tree_to_gui(tree_flow, recipe_results, 0, 0, compact_mode, raw_ingredients_mode)
     end
 

@@ -85,6 +85,34 @@ function M.register()
             else
                 storage.calculator_last_picked_item[player.index] = nil
             end
+        elseif element and element.name == "resource_calculator_assembler_picker" then
+            if element.elem_value then
+                local found_prototype = util.find_prototype_by_name(element.elem_value)
+                if found_prototype then
+                    storage.calculator_last_picked_assembler[player.index] = element.elem_value
+                end
+            else
+                storage.calculator_last_picked_assembler[player.index] = nil -- Default speed if no assembler is selected
+            end
+        elseif element and element.name == "resource_calculator_furnace_picker" then
+            if element.elem_value then
+                local found_prototype = util.find_prototype_by_name(element.elem_value)
+                if found_prototype then
+                    storage.calculator_last_picked_furnace[player.index] = element.elem_value
+                end
+            else
+                storage.calculator_last_picked_furnace[player.index] = nil -- Default speed if no furnace is selected
+            end
+        elseif element and element.name == "resource_calculator_drill_picker" then
+            if element.elem_value then
+                local found_prototype = util.find_prototype_by_name(element.elem_value)
+                if found_prototype then
+                    storage.calculator_last_picked_drill[player.index] = element.elem_value
+                    -- storage.calculator_last_picked_drill[player.index] = found_prototype.place_result.mining_speed 
+                end
+            else
+                storage.calculator_last_picked_drill[player.index] = nil -- Default speed if no drill is selected
+            end
         end
     end)
 
@@ -120,19 +148,30 @@ function M.register()
                 -- Find the frame in gui.screen
                 local frame = player.gui.screen.resource_calculator_frame
                 if frame then
-                    local item_picker = frame.children[2].children[2].resource_calculator_item_picker
-                    local number_input = frame.children[2].children[2].resource_calculator_number_input
-                    local item = item_picker and item_picker.elem_value or nil
-                    local amount = number_input and tonumber(number_input.text) or 1
+                    local item = storage.calculator_last_picked_item[player.index]
+                    local amount = storage.calculator_last_picked_production_rate[player.index]
                     
-
                     if prototypes == nil then
                         player.print("'prototypes' object not available.")
                         return
                     end
                     
+                    local assembler_speed = util.find_prototype_by_name(storage.calculator_last_picked_assembler[player.index]).place_result.get_crafting_speed()
+                    if assembler_speed == nil then
+                        assembler_speed = 0.5 -- Default speed if no assembler is selected
+                    end
+                    local furnace_speed = util.find_prototype_by_name(storage.calculator_last_picked_furnace[player.index]).place_result.get_crafting_speed()
+                    if furnace_speed == nil then
+                        furnace_speed = 1 -- Default speed if no furnace is selected
+                    end
+                    local drill_speed = util.find_prototype_by_name(storage.calculator_last_picked_drill[player.index]).place_result.mining_speed
+                    if drill_speed == nil then
+                        drill_speed = 0.25 -- Default speed if no drill is selected
+                    end
+                    
+
                     if item ~= nil and amount ~= nil then
-                        local recipe_results = calculator.calculate_requirements(item, amount, 1)
+                        local recipe_results = calculator.calculate_requirements(item, amount, assembler_speed, furnace_speed, drill_speed)
                         local result_label_name = "resource_calculator_result_label"
                         local sum_result_label_name = "resource_calculator_sum_result_label"
                         local sum_ingredients_table = {}

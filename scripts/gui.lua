@@ -1,4 +1,4 @@
-local style = require("../style")
+local style = require("style")
 
 local M = {}
 
@@ -68,15 +68,29 @@ local function add_form_flow(parent, player)
     form_flow.style.margin = style.calculator_window_content_dimensions.margin
     form_flow.style.vertical_spacing = 12
     
+    -- Add flow for pickers
+    local pickers_flow = form_flow.add{
+        type = "flow",
+        direction = "horizontal",
+        name = "resource_calculator_picker_flow"
+    }
+
+    -- Add flow item picker and label
+    local item_picker_container = pickers_flow.add{
+        type = "flow",
+        direction = "vertical",
+        name = "resource_calculator_item_picker_flow"
+    }
+
     -- Add a label for the item picker
-    form_flow.add{
+    item_picker_container.add{
         type = "label",
         caption = {"gui.calculator-item-picker-label"},
         style = "caption_label"
     }
 
     -- Add horizontal flow for item picker and number input
-    local item_picker_flow = form_flow.add{
+    local item_picker_flow = item_picker_container.add{
         type = "flow",
         direction = "horizontal",
         style = "horizontal_flow",
@@ -106,7 +120,7 @@ local function add_form_flow(parent, player)
         elem_type = "item",
         elem_filters = filters
     }
-    -- 
+    -- Set the item picker to the last picked item if available
     if storage.calculator_last_picked_item and storage.calculator_last_picked_item[player.index] then
         item_picker.elem_value = storage.calculator_last_picked_item[player.index]
     end
@@ -139,6 +153,89 @@ local function add_form_flow(parent, player)
         caption = {"gui.calculator-exclude-undiscovered-recipes-checkbox-label"},
         state = storage.calculator_recipies_filter_enabled[player.index]
     }
+
+    -- Flow for machine pickers
+    local machine_pickers_flow = pickers_flow.add{
+        type = "flow",
+        direction = "vertical"
+    }
+
+    -- Add a label for the machine pickers
+    machine_pickers_flow.add{
+        type = "label",
+        caption = {"gui.calculator-machine-pickers-label"},
+        style = "caption_label"
+    }
+    -- Add machine pickers flow
+    local machine_pickers_flow = machine_pickers_flow.add{
+        type = "flow",
+        style = "horizontal_flow",
+        direction = "horizontal",
+    }
+    machine_pickers_flow.style.horizontal_spacing = 8 
+    machine_pickers_flow.style.vertical_align = "center"
+    
+    -- Add a label for the assembler picker
+    machine_pickers_flow.add{
+        type = "label",
+        caption = {"gui.calculator-assembler-picker-label"},
+        style = "caption_label"
+    }
+    -- Add an assembler picker
+    local assembler_picker = machine_pickers_flow.add{ 
+        type = "choose-elem-button", 
+        name = "resource_calculator_assembler_picker", 
+        caption = {"gui.calculator-assembler-picker-placeholder"},
+        elem_type = "item",
+        elem_filters = {
+            {filter = "name", name = "assembling-machine-1"},
+            {filter = "name", name = "assembling-machine-2"},
+            {filter = "name", name = "assembling-machine-3"}
+        }
+    }
+    -- Set the assembler picker to the last picked item if available
+    if storage.calculator_last_picked_assembler and storage.calculator_last_picked_assembler[player.index] then
+        assembler_picker.elem_value = storage.calculator_last_picked_assembler[player.index]
+    end
+    -- Add a label for the furnace picker
+    machine_pickers_flow.add{
+        type = "label",
+        caption = {"gui.calculator-furnace-picker-label"},
+        style = "caption_label"
+    }
+    -- Add an furnace picker
+    local furnace_picker = machine_pickers_flow.add{ 
+        type = "choose-elem-button", 
+        name = "resource_calculator_furnace_picker", 
+        caption = {"gui.calculator-furnace-picker-placeholder"},
+        elem_type = "entity",
+        elem_filters = {{filter = "type", type  = "furnace"}}
+    }
+    -- Set the furnace picker to the last picked item if available
+    if storage.calculator_last_picked_furnace and storage.calculator_last_picked_furnace[player.index] then
+        furnace_picker.elem_value = storage.calculator_last_picked_furnace[player.index]
+    end
+    -- Add a label for the drill picker
+    machine_pickers_flow.add{
+        type = "label",
+        caption = {"gui.calculator-drill-picker-label"},
+        style = "caption_label"
+    }
+    -- Add a drill picker
+    local drill_picker = machine_pickers_flow.add{ 
+        type = "choose-elem-button", 
+        name = "resource_calculator_drill_picker", 
+        caption = {"gui.calculator-drill-picker-placeholder"},
+        elem_type = "item",
+        elem_filters = {
+            {filter = "name", name = "burner-mining-drill"},
+            {filter = "name", name = "electric-mining-drill"}
+        }
+    }
+    -- Set the drill picker to the last picked item if available
+    if storage.calculator_last_picked_drill and storage.calculator_last_picked_drill[player.index] then
+        drill_picker.elem_value = storage.calculator_last_picked_drill[player.index]
+    end
 
     -- Add a label for additional options
     form_flow.add{

@@ -1,4 +1,4 @@
-local style = require("../style")
+local style = require("style")
 
 local M = {}
 

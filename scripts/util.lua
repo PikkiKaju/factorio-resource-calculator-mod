@@ -9,6 +9,9 @@ function M.init_globals()
     storage.calculator_tree_mode = {}
     storage.calculator_last_picked_item = {}
     storage.calculator_last_picked_production_rate = {}
+    storage.calculator_last_picked_assembler = {}
+    storage.calculator_last_picked_furnace = {}
+    storage.calculator_last_picked_drill = {}
 end
 
 
@@ -24,6 +27,19 @@ function M.init_globals_for_player(player)
     end
     storage.calculator_last_picked_item[player.index] = nil -- Initialize last picked item
     storage.calculator_last_picked_production_rate[player.index] = 1 -- Initialize last picked amount
+    storage.calculator_last_picked_assembler[player.index] = nil -- Initialize last picked assembler
+    storage.calculator_last_picked_furnace[player.index] = nil  -- Initialize last picked furnace
+    storage.calculator_last_picked_drill[player.index] = nil -- Initialize last picked drill
+end
+
+function M.find_prototype_by_name(name)
+    local prototype_types = {"item", "fluid", "tool", "ammo", "capsule", "armor", "gun", "module", "rail-planner", "repair-tool", "mining-tool", "item-with-entity-data", "item-with-inventory", "item-with-label", "item-with-tags", "item-with-entity-data"}
+    for _, proto_type in ipairs(prototype_types) do
+        if prototypes[proto_type] and prototypes[proto_type][name] then
+            return prototypes[proto_type][name]
+        end
+    end
+    return nil
 end
 
 return M

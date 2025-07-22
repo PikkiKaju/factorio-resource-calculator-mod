@@ -1,7 +1,7 @@
 local M = {}
 
 -- Calculate resource requirements for a given item and production rate
-function M.calculate_requirements(target_item_name, target_production_rate, machine_speed)
+function M.calculate_requirements(target_item_name, target_production_rate, assembler_speed, furnace_speed, drill_speed)
     local recipe = prototypes.recipe[target_item_name]
     local recipe_table = {}
     local ingredients_table = {}
@@ -28,17 +28,34 @@ function M.calculate_requirements(target_item_name, target_production_rate, mach
         end
     end
 
+
+    local machine_speed = 1
+    if prototypes["entity"]["resource"] and prototypes["entity"]["resource"][target_item_name] then
+        if target_item_name == "crude_oil" then
+            machine_speed = 1 -- Crude oil is extracted with a pumpjack, which has a fixed speed
+        end
+        machine_speed = drill_speed
+    elseif recipe and recipe.main_product.type == "fluid" then
+        machine_speed = 1 -- fluids are processed in chemical plants or refineries, which have a fixed speed
+    elseif recipe and recipe.category == "smelting" then
+        machine_speed = furnace_speed
+    elseif recipe and recipe.category == "crafting" or recipe.category == "advanced-crafting" or recipe.category == "crafting-with-fluid" then
+        machine_speed = assembler_speed
+    end
+    
     local default_production_rate_per_second = recipe.main_product.amount / recipe.energy
     local process_amount = target_production_rate / recipe.main_product.amount
     local total_time = process_amount * recipe.energy 
-    local machines_amount = total_time * machine_speed
+    local machines_amount = total_time / machine_speed
     local adjusted_production_rate = target_production_rate / default_production_rate_per_second
 
     for _, ingredient in pairs(recipe.ingredients) do
         table.insert(ingredients_table, M.calculate_requirements(
             ingredient.name, 
             ingredient.amount * process_amount,
-            machine_speed
+            assembler_speed,
+            furnace_speed,
+            drill_speed
         ))
     end
     recipe_table = {

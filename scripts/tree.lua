@@ -9,7 +9,7 @@ local function add_text_recipe_tree_to_gui(parent, recipe_table, indent_level, i
     pipes = pipes or {}
 
     -- Check if the item is a raw ingredient
-    if not raw_ingredients_mode and recipe_table.machines_amount == nil then
+    if not raw_ingredients_mode and recipe_table.raw_ingredient == true then
         return
     end
 
@@ -273,7 +273,7 @@ local function add_graphicap_recipe_tree_to_gui(parent, recipe_table, layer, col
     local is_last = false
 
     -- Check if the item is a raw ingredient
-    if not raw_ingredients_mode and recipe_table.machines_amount == nil then
+    if not raw_ingredients_mode and recipe_table.raw_ingredient == true then
         return
     end
 

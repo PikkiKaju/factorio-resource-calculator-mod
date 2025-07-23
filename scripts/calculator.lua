@@ -11,9 +11,11 @@ function M.calculate_requirements(target_item_name, target_production_rate, asse
 
     if recipe == nil then
         local found_prototype = nil
-        local raw_types = { "iron-ore", "copper-ore", "coal", "stone", "crude-oil", "uranium-ore" }
-        for _, raw_type in ipairs(raw_types) do
-            if target_item_name == raw_type then
+        local raw_resources = { "iron-ore", "copper-ore", "coal", "stone", "crude-oil", "uranium-ore" }
+        local is_raw_resource = false
+        for _, raw_resource in ipairs(raw_resources) do
+            if target_item_name == raw_resource then
+                is_raw_resource = true
                 if target_item_name == "crude_oil" then
                     machine_speed = 1 -- Crude oil is extracted with a pumpjack, which has a fixed speed
                 else
@@ -24,17 +26,17 @@ function M.calculate_requirements(target_item_name, target_production_rate, asse
         end
         found_prototype = util.find_prototype_by_name(target_item_name)
         if found_prototype then
-            local machines_amount = target_production_rate / machine_speed
-            -- If the raw ingredient is a fluid, no need to specify machines amount
-            if found_prototype.type == "fluid" then
-                machines_amount = nil
-            end
             local final_item_table = {
                 name = found_prototype.name,
                 type = found_prototype.type,
                 item_amount_per_second = target_production_rate,
-                machines_amount = machines_amount
+                machines_amount = target_production_rate / machine_speed,
+                raw_ingredient = is_raw_resource
             }
+            -- If the raw ingredient is a fluid, no need to specify machines amount
+            if found_prototype.type == "fluid" then
+                final_item_table.machines_amount = nil
+            end
             return final_item_table
         else
             return {name = target_item_name, item_amount_per_second = target_production_rate, type = "unknown"}
@@ -71,7 +73,8 @@ function M.calculate_requirements(target_item_name, target_production_rate, asse
         process_amount_per_second = process_amount,
         machines_amount = machines_amount,
         energy = recipe.energy,
-        ingredients = ingredients_table
+        ingredients = ingredients_table,
+        raw_ingredient = false
     }
 
     return recipe_table

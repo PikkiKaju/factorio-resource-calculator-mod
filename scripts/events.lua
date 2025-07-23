@@ -156,20 +156,19 @@ function M.register()
                         return
                     end
                     
-                    local assembler_speed = util.find_prototype_by_name(storage.calculator_last_picked_assembler[player.index]).place_result.get_crafting_speed()
-                    if assembler_speed == nil then
-                        assembler_speed = 0.5 -- Default speed if no assembler is selected
+                    local assembler_speed = 0.5 -- Default speed if no assembler is selected
+                    local furnace_speed = 1 -- Default speed if no furnace is selected
+                    local drill_speed = 0.25 -- Default speed if no drill is selected
+                    if storage.calculator_last_picked_assembler[player.index] then
+                        assembler_speed = util.find_prototype_by_name(storage.calculator_last_picked_assembler[player.index]).place_result.get_crafting_speed()
                     end
-                    local furnace_speed = util.find_prototype_by_name(storage.calculator_last_picked_furnace[player.index]).place_result.get_crafting_speed()
-                    if furnace_speed == nil then
-                        furnace_speed = 1 -- Default speed if no furnace is selected
+                    if storage.calculator_last_picked_furnace[player.index] then
+                        furnace_speed = util.find_prototype_by_name(storage.calculator_last_picked_furnace[player.index]).place_result.get_crafting_speed()
                     end
-                    local drill_speed = util.find_prototype_by_name(storage.calculator_last_picked_drill[player.index]).place_result.mining_speed
-                    if drill_speed == nil then
-                        drill_speed = 0.25 -- Default speed if no drill is selected
+                    if storage.calculator_last_picked_drill[player.index] then
+                        drill_speed = util.find_prototype_by_name(storage.calculator_last_picked_drill[player.index]).place_result.mining_speed
                     end
-                    
-
+                
                     if item ~= nil and amount ~= nil then
                         local recipe_results = calculator.calculate_requirements(item, amount, assembler_speed, furnace_speed, drill_speed)
                         local result_label_name = "resource_calculator_result_label"

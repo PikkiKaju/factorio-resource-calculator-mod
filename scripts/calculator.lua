@@ -1,3 +1,5 @@
+local util = require("scripts.util")
+
 local M = {}
 
 -- Calculate resource requirements for a given item and production rate
@@ -5,22 +7,33 @@ function M.calculate_requirements(target_item_name, target_production_rate, asse
     local recipe = prototypes.recipe[target_item_name]
     local recipe_table = {}
     local ingredients_table = {}
-    local player = game.players[1] 
+    local machine_speed = 1
 
     if recipe == nil then
         local found_prototype = nil
-        local proto_types = {"item", "fluid", "tool", "ammo", "capsule", "armor", "gun", "module", "rail-planner", "repair-tool", "mining-tool", "item-with-entity-data", "item-with-inventory", "item-with-label", "item-with-tags", "item-with-entity-data"}
-        for _, proto_type in ipairs(proto_types) do
-            if prototypes[proto_type] and prototypes[proto_type][target_item_name] then
-                found_prototype = prototypes[proto_type][target_item_name]
+        local raw_types = { "iron-ore", "copper-ore", "coal", "stone", "crude-oil", "uranium-ore" }
+        for _, raw_type in ipairs(raw_types) do
+            if target_item_name == raw_type then
+                if target_item_name == "crude_oil" then
+                    machine_speed = 1 -- Crude oil is extracted with a pumpjack, which has a fixed speed
+                else
+                    machine_speed = drill_speed
+                end
                 break
             end
         end
+        found_prototype = util.find_prototype_by_name(target_item_name)
         if found_prototype then
+            local machines_amount = target_production_rate / machine_speed
+            -- If the raw ingredient is a fluid, no need to specify machines amount
+            if found_prototype.type == "fluid" then
+                machines_amount = nil
+            end
             local final_item_table = {
                 name = found_prototype.name,
                 type = found_prototype.type,
-                item_amount_per_second = target_production_rate
+                item_amount_per_second = target_production_rate,
+                machines_amount = machines_amount
             }
             return final_item_table
         else
@@ -28,18 +41,11 @@ function M.calculate_requirements(target_item_name, target_production_rate, asse
         end
     end
 
-
-    local machine_speed = 1
-    if prototypes["entity"]["resource"] and prototypes["entity"]["resource"][target_item_name] then
-        if target_item_name == "crude_oil" then
-            machine_speed = 1 -- Crude oil is extracted with a pumpjack, which has a fixed speed
-        end
-        machine_speed = drill_speed
-    elseif recipe and recipe.main_product.type == "fluid" then
+    if recipe.main_product.type == "fluid" then
         machine_speed = 1 -- fluids are processed in chemical plants or refineries, which have a fixed speed
-    elseif recipe and recipe.category == "smelting" then
+    elseif recipe.category == "smelting" then
         machine_speed = furnace_speed
-    elseif recipe and recipe.category == "crafting" or recipe.category == "advanced-crafting" or recipe.category == "crafting-with-fluid" then
+    elseif recipe.category == "crafting" or recipe.category == "advanced-crafting" or recipe.category == "crafting-with-fluid" then
         machine_speed = assembler_speed
     end
     

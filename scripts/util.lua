@@ -33,7 +33,7 @@ function M.init_globals_for_player(player)
 end
 
 function M.find_prototype_by_name(name)
-    local prototype_types = {"item", "fluid", "tool", "ammo", "capsule", "armor", "gun", "module", "rail-planner", "repair-tool", "mining-tool", "item-with-entity-data", "item-with-inventory", "item-with-label", "item-with-tags", "item-with-entity-data"}
+    local prototype_types = { "item", "fluid", "equipment" } -- "entity", 
     for _, proto_type in ipairs(prototype_types) do
         if prototypes[proto_type] and prototypes[proto_type][name] then
             return prototypes[proto_type][name]

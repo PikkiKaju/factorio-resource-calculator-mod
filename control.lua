@@ -51,6 +51,9 @@ script.on_configuration_changed(function(data)
     if storage.calculator_last_picked_drill == nil then
         storage.calculator_last_picked_drill = {}
     end
+    if storage.calculator_last_calculated_info == nil then
+        storage.calculator_last_calculated_info = {}
+    end
 
     -- Recreate the GUI button for all players
     for _, player in pairs(game.players) do

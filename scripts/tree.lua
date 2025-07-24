@@ -351,6 +351,7 @@ function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table, tree_m
     end
 
     M.add_summed_requirements_to_gui(tree_flow, recipe_results, sum_ingredients_table)
+
 end
 
 return M

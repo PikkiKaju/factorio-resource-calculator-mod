@@ -1,3 +1,7 @@
+Version: 0.1.2
+Date: 2025-07-24
+  Features:
+    - The calculator tree is now preserved after closing and reopening the GUI
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.1
 Date: 2025-07-23

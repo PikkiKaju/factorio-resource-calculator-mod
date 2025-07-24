@@ -12,6 +12,7 @@ function M.init_globals()
     storage.calculator_last_picked_assembler = {}
     storage.calculator_last_picked_furnace = {}
     storage.calculator_last_picked_drill = {}
+    storage.calculator_last_calculated_info = {}
 end
 
 
@@ -29,7 +30,8 @@ function M.init_globals_for_player(player)
     storage.calculator_last_picked_production_rate[player.index] = 1 -- Initialize last picked amount
     storage.calculator_last_picked_assembler[player.index] = nil -- Initialize last picked assembler
     storage.calculator_last_picked_furnace[player.index] = nil  -- Initialize last picked furnace
-    storage.calculator_last_picked_drill[player.index] = nil -- Initialize last picked drill
+    storage.calculator_last_picked_drill[player.index] = nil         -- Initialize last picked drill
+    storage.calculator_last_calculated_info[player.index] = nil -- Initialize last calculated info
 end
 
 function M.find_prototype_by_name(name)

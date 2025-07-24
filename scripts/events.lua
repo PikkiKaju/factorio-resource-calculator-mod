@@ -171,8 +171,6 @@ function M.register()
                 
                     if item ~= nil and amount ~= nil then
                         local recipe_results = calculator.calculate_requirements(item, amount, assembler_speed, furnace_speed, drill_speed)
-                        local result_label_name = "resource_calculator_result_label"
-                        local sum_result_label_name = "resource_calculator_sum_result_label"
                         local sum_ingredients_table = {}
                         -- Sum the requirements
                         if recipe_results.ingredients then
@@ -190,7 +188,13 @@ function M.register()
                         local tree_mode = storage.calculator_tree_mode[player.index]
                         local compact_mode = storage.calculator_compact_mode_enabled[player.index]
                         local raw_ingredients_mode = storage.calculator_raw_ingredients_mode_enabled[player.index]
-                        
+
+                        -- save the calculation information to the storage
+                        storage.calculator_last_calculated_info[player.index] = {
+                            recipe_results = recipe_results,
+                            sum_ingredients_table = sum_ingredients_table,
+                        }
+
                         tree.add_recipe_tree(content_flow, recipe_results, sum_ingredients_table, tree_mode, compact_mode, raw_ingredients_mode)
                     else
                         player.print("Please select an item and enter a valid number.")
@@ -212,6 +216,7 @@ function M.register()
     -- Close the GUI when the close event triggered (e.g., Escape)
     script.on_event(defines.events.on_gui_closed, function(event)
         if event.element and event.element.name == "resource_calculator_frame" then
+            local player = game.get_player(event.player_index)
             event.element.destroy()
         end
     end)

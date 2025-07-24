@@ -1,3 +1,4 @@
+local tree = require("scripts.tree")
 local style = require("style")
 
 local M = {}
@@ -333,6 +334,18 @@ function M.open_calculator_gui(player)
         name = "resource_calculator_content_flow",
         direction = "vertical"
     }
+
+    -- Add the recipe tree to the content flow if it was previously calculated
+    if storage.calculator_last_calculated_info[player.index] then
+        tree.add_recipe_tree(
+            content_flow,
+            storage.calculator_last_calculated_info[player.index].recipe_results,
+            storage.calculator_last_calculated_info[player.index].sum_ingredients_table,
+            storage.calculator_tree_mode[player.index],
+            storage.calculator_compact_mode_enabled[player.index],
+            storage.calculator_raw_ingredients_mode_enabled[player.index]
+        )
+    end
 
     -- Make Escape close the window
     player.opened = frame

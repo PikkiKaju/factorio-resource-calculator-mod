@@ -75,6 +75,7 @@ local function add_form_flow(parent, player)
         direction = "horizontal",
         name = "resource_calculator_picker_flow"
     }
+    pickers_flow.style.horizontal_spacing = 30
 
     -- Add flow item picker and label
     local item_picker_container = pickers_flow.add{
@@ -96,7 +97,7 @@ local function add_form_flow(parent, player)
         direction = "horizontal",
         style = "horizontal_flow",
     }
-    item_picker_flow.style.horizontal_spacing = 8 
+    item_picker_flow.style.horizontal_spacing = 8
     item_picker_flow.style.vertical_align = "center" 
 
     -- Create a filter for the item picker
@@ -180,7 +181,7 @@ local function add_form_flow(parent, player)
     machine_pickers_flow.add{
         type = "label",
         caption = {"gui.calculator-assembler-picker-label"},
-        style = "caption_label"
+        style = "label"
     }
     -- Add an assembler picker
     local assembler_picker = machine_pickers_flow.add{ 
@@ -202,7 +203,7 @@ local function add_form_flow(parent, player)
     machine_pickers_flow.add{
         type = "label",
         caption = {"gui.calculator-furnace-picker-label"},
-        style = "caption_label"
+        style = "label"
     }
     -- Add an furnace picker
     local furnace_picker = machine_pickers_flow.add{ 
@@ -220,7 +221,7 @@ local function add_form_flow(parent, player)
     machine_pickers_flow.add{
         type = "label",
         caption = {"gui.calculator-drill-picker-label"},
-        style = "caption_label"
+        style = "label"
     }
     -- Add a drill picker
     local drill_picker = machine_pickers_flow.add{ 

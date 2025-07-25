@@ -22,18 +22,19 @@
 
 1. Click the **Open Calculator** button in the top-right GUI or press `Ctrl+C`.
 2. Select an item and enter the desired production rate.
-3. Adjust additional options as needed:
+3. Select the production mchines you're using.
+4. Adjust additional options as needed:
    - Exclude undiscovered recipes
    - Compact mode
    - Show raw ingredients
    - Choose tree display mode (Text/Graphical)
-4. Click **Confirm** to view the resource breakdown.
+5. Click **Confirm** to view the resource breakdown.
 
 ## Installation
 
 
 
-1. [Download on the Mod Portal](https://mods.factorio.com/mod/production-calculator) or clone this repository into your Factorio `mods` folder.
+1. Clone this repository into your Factorio `mods` folder.
 2. Ensure you are running Factorio version 2.0 or higher.
 3. Enable the mod in the Factorio mod manager.
 

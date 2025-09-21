@@ -54,6 +54,15 @@ script.on_configuration_changed(function(data)
     if storage.calculator_last_calculated_info == nil then
         storage.calculator_last_calculated_info = {}
     end
+    if storage.calculator_window_width == nil then
+        storage.calculator_window_width = {}
+    end
+    if storage.calculator_tree_height == nil then
+        storage.calculator_tree_height = {}
+    end
+    if storage.calculator_window_size_mode == nil then
+        storage.calculator_window_size_mode = {}
+    end
 
     -- Recreate the GUI button for all players
     for _, player in pairs(game.players) do

@@ -307,7 +307,11 @@ end
 
 
 -- Add tree for recipe results
-function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table, tree_mode, compact_mode, raw_ingredients_mode)
+function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table, tree_mode, compact_mode, raw_ingredients_mode, opts)
+    local tree_width = style.calculator_window_tree_dimensions.width
+    local tree_height = style.calculator_window_tree_dimensions.height
+    if opts and opts.width then tree_width = opts.width end
+    if opts and opts.height then tree_height = opts.height end
     local tree_scroll = parent.add{
         type = "flow",
         name = "resource_calculator_result_flow",
@@ -315,10 +319,10 @@ function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table, tree_m
         vertical_align = "top",
         horizontal_align = "center"
     }
-    tree_scroll.style.minimal_height = style.calculator_window_tree_dimensions.height
-    tree_scroll.style.maximal_height = style.calculator_window_tree_dimensions.height
-    tree_scroll.style.minimal_width = style.calculator_window_tree_dimensions.width
-    tree_scroll.style.maximal_width = style.calculator_window_tree_dimensions.width
+    tree_scroll.style.minimal_height = tree_height
+    tree_scroll.style.maximal_height = tree_height
+    tree_scroll.style.minimal_width = tree_width
+    tree_scroll.style.maximal_width = tree_width
     tree_scroll.style.margin = style.calculator_window_tree_dimensions.margin   
     
     -- Add a top-level label for clarity
@@ -334,10 +338,10 @@ function M.add_recipe_tree(parent, recipe_results, sum_ingredients_table, tree_m
         name = "resource_calculator_result_tree",
         direction = "vertical"
     }
-    tree_flow.style.minimal_height = style.calculator_window_tree_dimensions.height 
-    tree_flow.style.maximal_height = style.calculator_window_tree_dimensions.height
-    tree_flow.style.minimal_width = style.calculator_window_tree_dimensions.width
-    tree_flow.style.maximal_width = style.calculator_window_tree_dimensions.width
+    tree_flow.style.minimal_height = tree_height 
+    tree_flow.style.maximal_height = tree_height
+    tree_flow.style.minimal_width = tree_width
+    tree_flow.style.maximal_width = tree_width
 
     tree_flow.vertical_scroll_policy = "dont-show-but-allow-scrolling"
     tree_flow.horizontal_scroll_policy = "dont-show-but-allow-scrolling"

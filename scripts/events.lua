@@ -2,10 +2,11 @@ local gui = require("scripts.gui")
 local calculator = require("scripts.calculator")
 local tree = require("scripts.tree")
 local util = require("scripts.util")
+local style = require("style")
 
 local M = {}
 
-function M.register()    
+function M.register()
     script.on_event(defines.events.on_player_joined_game, function(event)
         local player = game.get_player(event.player_index)
         if player then
@@ -108,7 +109,7 @@ function M.register()
                 local found_prototype = util.find_prototype_by_name(element.elem_value)
                 if found_prototype then
                     storage.calculator_last_picked_drill[player.index] = element.elem_value
-                    -- storage.calculator_last_picked_drill[player.index] = found_prototype.place_result.mining_speed 
+                    -- storage.calculator_last_picked_drill[player.index] = found_prototype.place_result.mining_speed
                 end
             else
                 storage.calculator_last_picked_drill[player.index] = nil -- Default speed if no drill is selected
@@ -141,7 +142,7 @@ function M.register()
                 gui.open_calculator_gui(player)
             end
 
-        -- If the clicked element is the confirm button, process the input
+            -- If the clicked element is the confirm button, process the input
         elseif element and element.name == "resource_calculator_confirm_button" then
             local player = game.get_player(event.player_index)
             if player then
@@ -150,27 +151,31 @@ function M.register()
                 if frame then
                     local item = storage.calculator_last_picked_item[player.index]
                     local amount = storage.calculator_last_picked_production_rate[player.index]
-                    
+
                     if prototypes == nil then
                         player.print("'prototypes' object not available.")
                         return
                     end
-                    
+
                     local assembler_speed = 0.5 -- Default speed if no assembler is selected
-                    local furnace_speed = 1 -- Default speed if no furnace is selected
-                    local drill_speed = 0.25 -- Default speed if no drill is selected
+                    local furnace_speed = 1     -- Default speed if no furnace is selected
+                    local drill_speed = 0.25    -- Default speed if no drill is selected
                     if storage.calculator_last_picked_assembler[player.index] then
-                        assembler_speed = util.find_prototype_by_name(storage.calculator_last_picked_assembler[player.index]).place_result.get_crafting_speed()
+                        assembler_speed = util.find_prototype_by_name(storage.calculator_last_picked_assembler
+                            [player.index]).place_result.get_crafting_speed()
                     end
                     if storage.calculator_last_picked_furnace[player.index] then
-                        furnace_speed = util.find_prototype_by_name(storage.calculator_last_picked_furnace[player.index]).place_result.get_crafting_speed()
+                        furnace_speed = util.find_prototype_by_name(storage.calculator_last_picked_furnace[player.index])
+                            .place_result.get_crafting_speed()
                     end
                     if storage.calculator_last_picked_drill[player.index] then
-                        drill_speed = util.find_prototype_by_name(storage.calculator_last_picked_drill[player.index]).place_result.mining_speed
+                        drill_speed = util.find_prototype_by_name(storage.calculator_last_picked_drill[player.index])
+                            .place_result.mining_speed
                     end
-                
+
                     if item ~= nil and amount ~= nil then
-                        local recipe_results = calculator.calculate_requirements(item, amount, assembler_speed, furnace_speed, drill_speed)
+                        local recipe_results = calculator.calculate_requirements(item, amount, assembler_speed,
+                            furnace_speed, drill_speed)
                         local sum_ingredients_table = {}
                         -- Sum the requirements
                         if recipe_results.ingredients then
@@ -180,11 +185,11 @@ function M.register()
                         end
                         -- Remove previous calculator content
                         local content_flow = frame.resource_calculator_content_flow
-                        
+
                         for _, child in pairs(content_flow.children) do
                             child.destroy()
                         end
-                        
+
                         local tree_mode = storage.calculator_tree_mode[player.index]
                         local compact_mode = storage.calculator_compact_mode_enabled[player.index]
                         local raw_ingredients_mode = storage.calculator_raw_ingredients_mode_enabled[player.index]
@@ -195,12 +200,68 @@ function M.register()
                             sum_ingredients_table = sum_ingredients_table,
                         }
 
-                        tree.add_recipe_tree(content_flow, recipe_results, sum_ingredients_table, tree_mode, compact_mode, raw_ingredients_mode)
+                        -- Apply current dynamic sizes for this build (no runtime require)
+                        local padding = style.calculator_window_dimensions.padding
+                        local window_w = storage.calculator_window_width[player.index] or
+                            style.calculator_window_dimensions.width
+                        local tree_h = storage.calculator_tree_height[player.index] or
+                            style.calculator_window_tree_dimensions.height
+                        local content_w = window_w - 2 * padding
+                        local orig_w = style.calculator_window_tree_dimensions.width
+                        local orig_h = style.calculator_window_tree_dimensions.height
+                        style.calculator_window_tree_dimensions.width = content_w
+                        style.calculator_window_tree_dimensions.height = tree_h
+
+                        tree.add_recipe_tree(content_flow, recipe_results, sum_ingredients_table, tree_mode, compact_mode,
+                            raw_ingredients_mode)
+
+                        -- Restore
+                        style.calculator_window_tree_dimensions.width = orig_w
+                        style.calculator_window_tree_dimensions.height = orig_h
                     else
                         player.print("Please select an item and enter a valid number.")
                     end
                 end
             end
+        
+        -- Size mode controls
+        elseif element and (element.name == "resource_calculator_mode_full") then
+            local player = game.get_player(event.player_index)
+            if player then
+                local mode = storage.calculator_window_size_mode[player.index] or "small"
+                if element.name == "resource_calculator_mode_full" and mode == "full" then mode = "small" 
+                elseif element.name == "resource_calculator_mode_full" and mode == "small" then mode = "full" end
+                storage.calculator_window_size_mode[player.index] = mode
+
+                -- When switching to preset modes, compute and store width/height now
+                local padding = style.calculator_window_dimensions.padding
+                local titlebar_h = style.calculator_window_titlebar_dimensions.height
+                local content_h = style.calculator_window_content_dimensions.height
+                local res = player.display_resolution
+                local scale = player.display_scale or 1
+                local screen_w = math.floor(res.width / scale)
+                local screen_h = math.floor(res.height / scale)
+                local window_w = storage.calculator_window_width[player.index] or
+                    style.calculator_window_dimensions.width
+                local tree_h = storage.calculator_tree_height[player.index] or
+                    style.calculator_window_tree_dimensions.height
+
+                if mode == "small" then
+                    window_w = math.floor(screen_w * 2 / 3)
+                    local target_frame_h = math.floor(screen_h * 3 / 4)
+                    tree_h = target_frame_h - (content_h + titlebar_h + 2 * padding + 40)
+                elseif mode == "full" then
+                    window_w = math.max(400, screen_w)
+                    local target_frame_h = math.max(300, screen_h)
+                    tree_h = target_frame_h - (content_h + titlebar_h + 2 * padding + 40)
+                end
+                if tree_h < 200 then tree_h = 200 end
+
+                storage.calculator_window_width[player.index] = window_w
+                storage.calculator_tree_height[player.index] = tree_h
+                gui.open_calculator_gui(player)
+            end
+
         -- If the clicked element is the close button, close the GUI
         elseif element and element.name == "resource_calculator_close_button" then
             local player = game.get_player(event.player_index)
@@ -235,6 +296,6 @@ function M.register()
             end
         end
     end)
-end 
+end
 
 return M

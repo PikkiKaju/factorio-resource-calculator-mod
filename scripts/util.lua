@@ -1,3 +1,4 @@
+local style = require("style")
 local M = {}
 
 -- Initialize global storage if it doesn't exist
@@ -13,6 +14,9 @@ function M.init_globals()
     storage.calculator_last_picked_furnace = {}
     storage.calculator_last_picked_drill = {}
     storage.calculator_last_calculated_info = {}
+    storage.calculator_window_width = {}
+    storage.calculator_tree_height = {}
+    storage.calculator_window_size_mode = {} -- "small" | "full"
 end
 
 
@@ -32,6 +36,16 @@ function M.init_globals_for_player(player)
     storage.calculator_last_picked_furnace[player.index] = nil  -- Initialize last picked furnace
     storage.calculator_last_picked_drill[player.index] = nil         -- Initialize last picked drill
     storage.calculator_last_calculated_info[player.index] = nil -- Initialize last calculated info
+    -- Initialize window sizing with defaults if not set
+    if storage.calculator_window_width[player.index] == nil then
+        storage.calculator_window_width[player.index] = style.calculator_window_dimensions.width
+    end
+    if storage.calculator_tree_height[player.index] == nil then
+        storage.calculator_tree_height[player.index] = style.calculator_window_tree_dimensions.height
+    end
+    if storage.calculator_window_size_mode[player.index] == nil then
+        storage.calculator_window_size_mode[player.index] = "small"
+    end
 end
 
 function M.find_prototype_by_name(name)
